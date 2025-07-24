@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=LXQtPanel/Plugin
+Name=Weather
+Name[ru]=Погода
+Comment=Shows current weather conditions
+Comment[ru]=Показывает текущие погодные условия
+Icon=weather-few-clouds
