@@ -10,7 +10,7 @@
 #include <QPushButton>
 #include <QGroupBox>
 #include <QFormLayout>
-#include <QMessageBox>
+#include <QDialog>
 #include <QDialogButtonBox>
 
 // Simple adapter from PluginSettings to IWeatherSettings interface
@@ -142,8 +142,6 @@ QDialog* LXQtWeatherPlugin::configureDialog()
         PluginSettingsAdapter adapter(settings());
         mWidget->updateSettings(&adapter);
 
-        QMessageBox::information(dialog, "Settings Saved",
-                               "Weather widget settings have been updated successfully!");
         dialog->accept();
     });
 
