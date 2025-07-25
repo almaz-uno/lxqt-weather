@@ -5,7 +5,7 @@
 #include <QJsonParseError>
 #include <QDebug>
 
-// Open-Meteo API - бесплатный и без ключей!
+// Open-Meteo API - free and no keys required!
 const QString WeatherAPI::API_BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
 WeatherAPI::WeatherAPI(QObject *parent)
@@ -22,7 +22,7 @@ void WeatherAPI::requestWeatherByCoordinates(double latitude, double longitude)
     QUrl url(API_BASE_URL);
     QUrlQuery query;
 
-    // Open-Meteo параметры
+    // Open-Meteo parameters
     query.addQueryItem("latitude", QString::number(latitude, 'f', 6));
     query.addQueryItem("longitude", QString::number(longitude, 'f', 6));
     query.addQueryItem("current_weather", "true");
@@ -44,8 +44,8 @@ void WeatherAPI::requestWeatherByCoordinates(double latitude, double longitude)
 
 void WeatherAPI::requestWeatherByCity(const QString &cityName)
 {
-    // Open-Meteo работает только с координатами
-    // Для городов нужно использовать геокодирование отдельно
+    // Open-Meteo works only with coordinates
+    // For cities, geocoding needs to be used separately
     Q_UNUSED(cityName)
     emit errorOccurred("Open-Meteo requires coordinates. Please use location service.");
 }
@@ -108,7 +108,7 @@ void WeatherAPI::processWeatherData(const QByteArray &data)
 
     QJsonObject root = doc.object();
 
-    // Проверяем наличие данных о текущей погоде
+    // Check for current weather data
     if (!root.contains("current_weather")) {
         emit errorOccurred("Invalid response format from Open-Meteo API");
         return;
@@ -116,23 +116,23 @@ void WeatherAPI::processWeatherData(const QByteArray &data)
 
     QJsonObject currentWeather = root["current_weather"].toObject();
 
-    // Преобразуем формат Open-Meteo в наш внутренний формат
+    // Convert Open-Meteo format to our internal format
     QJsonObject weatherData;
     QJsonObject main;
     QJsonArray weatherArray;
     QJsonObject weather;
     QJsonObject wind;
 
-    // Основные данные о погоде
+    // Main weather data
     main["temp"] = currentWeather["temperature"].toDouble();
-    main["humidity"] = 0; // Open-Meteo не возвращает влажность в current_weather
-    main["pressure"] = 0; // Также нет давления в current_weather
+    main["humidity"] = 0; // Open-Meteo doesn't return humidity in current_weather
+    main["pressure"] = 0; // Also no pressure in current_weather
 
-    // Ветер
+    // Wind
     wind["speed"] = currentWeather["windspeed"].toDouble();
     wind["deg"] = currentWeather["winddirection"].toDouble();
 
-    // Описание погоды на основе WMO кода
+    // Weather description based on WMO code
     int weatherCode = currentWeather["weathercode"].toInt();
     weather["id"] = weatherCode;
     weather["main"] = getWeatherDescription(weatherCode);
@@ -141,20 +141,20 @@ void WeatherAPI::processWeatherData(const QByteArray &data)
 
     weatherArray.append(weather);
 
-    // Собираем финальный объект
+    // Build final object
     weatherData["main"] = main;
     weatherData["weather"] = weatherArray;
     weatherData["wind"] = wind;
     weatherData["dt"] = QDateTime::currentSecsSinceEpoch();
 
-    // Используем реальное название города если доступно
+    // Use real city name if available
     if (!mCityName.isEmpty()) {
         weatherData["name"] = mCityName;
     } else {
         weatherData["name"] = "Current Location";
     }
 
-    // Добавляем координаты
+    // Add coordinates
     QJsonObject coord;
     coord["lat"] = root["latitude"].toDouble();
     coord["lon"] = root["longitude"].toDouble();
@@ -167,7 +167,7 @@ void WeatherAPI::processWeatherData(const QByteArray &data)
 
 QString WeatherAPI::getWeatherIconFromCode(int weatherCode) const
 {
-    // Маппинг WMO weather codes в иконки
+    // Mapping WMO weather codes to icons
     switch (weatherCode) {
         case 0: return "01d"; // Clear sky
         case 1: return "02d"; // Mainly clear
@@ -203,7 +203,7 @@ QString WeatherAPI::getWeatherIconFromCode(int weatherCode) const
 
 QString WeatherAPI::getWeatherDescription(int weatherCode) const
 {
-    // Описания на основе WMO кодов
+    // Descriptions based on WMO codes
     switch (weatherCode) {
         case 0: return "Clear sky";
         case 1: return "Mainly clear";

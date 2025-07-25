@@ -21,7 +21,7 @@
 class WeatherAPI;
 class GeoLocation;
 
-// Простой интерфейс настроек для виджета
+// Simple settings interface for the widget
 class IWeatherSettings
 {
 public:
@@ -79,8 +79,8 @@ private:
     QLabel *mDescriptionLabel;
 
     // Settings
-    int mUpdateInterval;        // В минутах
-    QString mTemperatureUnit;   // "celsius" или "fahrenheit"
+    int mUpdateInterval;        // In minutes
+    QString mTemperatureUnit;   // "celsius" or "fahrenheit"
     bool mShowDescription;
 
     // Current data

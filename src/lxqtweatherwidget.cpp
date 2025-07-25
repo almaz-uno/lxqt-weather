@@ -35,7 +35,7 @@ LXQtWeatherWidget::LXQtWeatherWidget(QWidget *parent)
     setupUI();
     setupServices();
 
-    // Начальное обновление через 2 секунды после создания
+    // Initial update 2 seconds after creation
     QTimer::singleShot(2000, this, &LXQtWeatherWidget::refreshWeather);
 }
 
@@ -54,19 +54,19 @@ void LXQtWeatherWidget::updateSettings(IWeatherSettings *settings)
     mTemperatureUnit = settings->value("temperature_unit", "celsius").toString();
     mShowDescription = settings->value("show_description", true).toBool();
 
-    // Обновляем таймер обновления
+    // Update the update timer
     if (mUpdateTimer) {
         mUpdateTimer->stop();
-        mUpdateTimer->setInterval(mUpdateInterval * 60 * 1000); // Конвертируем в миллисекунды
+        mUpdateTimer->setInterval(mUpdateInterval * 60 * 1000); // Convert to milliseconds
         mUpdateTimer->start();
     }
 
-    // Обновляем отображение описания
+    // Update description display
     if (mDescriptionLabel) {
         mDescriptionLabel->setVisible(mShowDescription);
     }
 
-    // Обновляем отображение температуры если есть данные
+    // Update temperature display if data is available
     if (mHasValidData) {
         mTemperatureLabel->setText(formatTemperature(mCurrentTemperature));
     }
@@ -85,7 +85,7 @@ void LXQtWeatherWidget::refreshWeather()
 
     qDebug() << "Refreshing weather data...";
 
-    // Запрашиваем геолокацию, которая затем запросит погодные данные
+    // Request geolocation, which will then request weather data
     mGeoLocation->requestLocation();
 }
 
@@ -131,18 +131,18 @@ void LXQtWeatherWidget::onWeatherDataReceived(const QJsonObject &data)
 
     QJsonObject weatherInfo = weather[0].toObject();
 
-    // Извлекаем данные
+    // Extract data
     mCurrentTemperature = main["temp"].toDouble();
     QString description = weatherInfo["description"].toString();
     QString iconCode = weatherInfo["icon"].toString();
 
-    // ВАЖНО: Сначала устанавливаем флаг валидности данных
+    // IMPORTANT: First set the data validity flag
     mHasValidData = true;
 
-    // Затем обновляем UI
+    // Then update the UI
     updateDisplay(description, iconCode);
 
-    // Обновляем tooltip с подробной информацией
+    // Update tooltip with detailed information
     updateTooltip(data);
 
     qDebug() << "Weather updated: temp =" << mCurrentTemperature
@@ -153,12 +153,12 @@ void LXQtWeatherWidget::onLocationReceived(double latitude, double longitude)
 {
     qDebug() << "Location received:" << latitude << "," << longitude;
 
-    // Сохраняем текущие координаты
+    // Save current coordinates
     mCurrentLatitude = latitude;
     mCurrentLongitude = longitude;
 
     if (mWeatherAPI) {
-        // Используем новый метод для Open-Meteo
+        // Use new method for Open-Meteo
         mWeatherAPI->requestWeatherByCoordinates(latitude, longitude);
     }
 }
@@ -168,15 +168,15 @@ void LXQtWeatherWidget::onLocationReceived(const QString &cityName)
     qDebug() << "City name received:" << cityName;
     mCurrentCity = cityName;
 
-    // Передаем название города в WeatherAPI
+    // Pass city name to WeatherAPI
     if (mWeatherAPI) {
         mWeatherAPI->setCityName(cityName);
     }
 
-    // Обновляем тултип если есть данные о погоде
+    // Update tooltip if weather data is available
     if (mHasValidData && mWeatherAPI) {
-        // Можно обновить тултип с новым названием города
-        updateTooltip(QJsonObject()); // Передаем пустой объект, так как данные уже есть
+        // Can update tooltip with new city name
+        updateTooltip(QJsonObject()); // Pass empty object since data is already available
     }
 }
 
@@ -194,7 +194,7 @@ void LXQtWeatherWidget::onNetworkConfigurationChanged()
         return;
     }
 
-    // При изменении сети обновляем погоду (которая включает обновление геолокации)
+    // When network changes, update weather (which includes geolocation update)
     refreshWeather();
 }
 
@@ -205,14 +205,14 @@ void LXQtWeatherWidget::openYandexWeatherMap()
         return;
     }
 
-    // Формируем URL для Яндекс.Погоды с координатами
+    // Build URL for Yandex Weather with coordinates
     QString url = QString("https://yandex.ru/pogoda/maps/nowcast?lat=%1&lon=%2")
                      .arg(mCurrentLatitude, 0, 'f', 6)
                      .arg(mCurrentLongitude, 0, 'f', 6);
 
     qDebug() << "Opening Yandex weather map:" << url;
 
-    // Открываем URL в браузере по умолчанию
+    // Open URL in default browser
     if (!QDesktopServices::openUrl(QUrl(url))) {
         qWarning() << "Failed to open Yandex weather map URL";
     }
@@ -220,30 +220,30 @@ void LXQtWeatherWidget::openYandexWeatherMap()
 
 void LXQtWeatherWidget::setupUI()
 {
-    // Создаем основной layout
+    // Create main layout
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(4, 2, 4, 2);
     mainLayout->setSpacing(4);
 
-    // Иконка погоды
+    // Weather icon
     mIconLabel = new QLabel();
     mIconLabel->setFixedSize(24, 24);
     mIconLabel->setAlignment(Qt::AlignCenter);
-    mIconLabel->setPixmap(loadWeatherIcon("02d")); // Иконка по умолчанию
+    mIconLabel->setPixmap(loadWeatherIcon("02d")); // Default icon
     mainLayout->addWidget(mIconLabel);
 
-    // Вертикальный layout для текста
+    // Vertical layout for text
     QVBoxLayout *textLayout = new QVBoxLayout();
     textLayout->setContentsMargins(0, 0, 0, 0);
     textLayout->setSpacing(0);
 
-    // Температура
+    // Temperature
     mTemperatureLabel = new QLabel("--°");
     mTemperatureLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     mTemperatureLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     textLayout->addWidget(mTemperatureLabel);
 
-    // Описание погоды
+    // Weather description
     mDescriptionLabel = new QLabel("");
     mDescriptionLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     mDescriptionLabel->setStyleSheet("font-size: 9px; color: #666;");
@@ -255,7 +255,7 @@ void LXQtWeatherWidget::setupUI()
     setLayout(mainLayout);
     setFixedHeight(32);
 
-    // Устанавливаем курсор-руку для индикации кликабельности
+    // Set hand cursor to indicate clickability
     setCursor(Qt::PointingHandCursor);
 
     qDebug() << "Weather widget UI setup completed";
@@ -263,7 +263,7 @@ void LXQtWeatherWidget::setupUI()
 
 void LXQtWeatherWidget::setupServices()
 {
-    // Создаем API клиент для Open-Meteo
+    // Create API client for Open-Meteo
     mWeatherAPI = new WeatherAPI(this);
     connect(mWeatherAPI, &WeatherAPI::weatherDataReceived,
             this, &LXQtWeatherWidget::onWeatherDataReceived);
@@ -275,9 +275,9 @@ void LXQtWeatherWidget::setupServices()
                 }
             });
 
-    // Создаем сервис геолокации
+    // Create geolocation service
     mGeoLocation = new GeoLocation(this);
-    // Подключаем сигналы геолокации
+    // Connect geolocation signals
     connect(mGeoLocation, QOverload<double, double>::of(&GeoLocation::locationReceived),
             this, QOverload<double, double>::of(&LXQtWeatherWidget::onLocationReceived));
     connect(mGeoLocation, QOverload<const QString&>::of(&GeoLocation::locationReceived),
@@ -285,17 +285,17 @@ void LXQtWeatherWidget::setupServices()
     connect(mGeoLocation, &GeoLocation::errorOccurred,
             this, [this](const QString &error) {
                 qWarning() << "Geolocation error:" << error;
-                // При ошибке геолокации используем Москву как fallback
-                onLocationReceived(55.7558, 37.6176); // Москва
+                // If geolocation fails, use Moscow as fallback
+                                  onLocationReceived(55.7558, 37.6176); // Moscow
             });
 
-    // Настраиваем таймер обновления (погода + геолокация)
+    // Setup update timer (weather + geolocation)
     mUpdateTimer = new QTimer(this);
-    mUpdateTimer->setInterval(mUpdateInterval * 60 * 1000); // Конвертируем минуты в миллисекунды
+    mUpdateTimer->setInterval(mUpdateInterval * 60 * 1000); // Convert minutes to milliseconds
     connect(mUpdateTimer, &QTimer::timeout, this, &LXQtWeatherWidget::onUpdateTimer);
     mUpdateTimer->start();
 
-    // Настраиваем мониторинг сетевых изменений
+    // Setup network change monitoring
     mNetworkManager = new QNetworkConfigurationManager(this);
     connect(mNetworkManager, &QNetworkConfigurationManager::configurationChanged,
             this, &LXQtWeatherWidget::onNetworkConfigurationChanged);
@@ -309,23 +309,23 @@ void LXQtWeatherWidget::updateDisplay(const QString &description, const QString 
 {
     if (!mHasValidData) return;
 
-    // Обновляем температуру с правильной единицей измерения
+    // Update temperature with correct unit
     if (mTemperatureLabel) {
         mTemperatureLabel->setText(formatTemperature(mCurrentTemperature));
     }
 
-    // Обновляем описание погоды
+    // Update weather description
     if (mDescriptionLabel && !description.isEmpty()) {
         mDescriptionLabel->setText(description);
         mDescriptionLabel->setVisible(mShowDescription);
     }
 
-    // Обновляем иконку погоды
+    // Update weather icon
     if (mIconLabel && !iconCode.isEmpty()) {
         mIconLabel->setPixmap(loadWeatherIcon(iconCode));
     }
 
-    update(); // Перерисовываем виджет (убирает "Loading...")
+    update(); // Redraw widget (removes "Loading...")
 
     qDebug() << "UI updated: temp =" << formatTemperature(mCurrentTemperature)
              << ", desc =" << description << ", icon =" << iconCode;
@@ -343,7 +343,7 @@ QString LXQtWeatherWidget::formatTemperature(double temperature) const
 
 QString LXQtWeatherWidget::getWeatherDescription(int weatherCode) const
 {
-    // Эта функция дублирует логику из WeatherAPI, но нужна для обратной совместимости
+    // This function duplicates logic from WeatherAPI but is needed for backward compatibility
     switch (weatherCode) {
         case 0: return "Clear sky";
         case 1: return "Mainly clear";
@@ -369,7 +369,7 @@ QString LXQtWeatherWidget::getWeatherDescription(int weatherCode) const
 
 QPixmap LXQtWeatherWidget::loadWeatherIcon(const QString &iconCode) const
 {
-    // Создаем простые Unicode символы как иконки
+    // Create simple Unicode symbols as icons
     QPixmap pixmap(24, 24);
     pixmap.fill(Qt::transparent);
 
@@ -399,7 +399,7 @@ void LXQtWeatherWidget::updateTooltip(const QJsonObject &data)
 {
     QString tooltipText;
 
-    // Используем реальное название города если доступно, иначе из данных
+    // Use real city name if available, otherwise from data
     QString locationName = mCurrentCity;
     if (locationName.isEmpty() && data.contains("name")) {
         locationName = data["name"].toString();

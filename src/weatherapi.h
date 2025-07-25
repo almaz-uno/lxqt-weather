@@ -16,7 +16,7 @@ class WeatherAPI : public QObject
 public:
     explicit WeatherAPI(QObject *parent = nullptr);
 
-    // Убираем API ключ - Open-Meteo не требует регистрации
+    // Remove API key - Open-Meteo doesn't require registration
     void requestWeatherByCoordinates(double latitude, double longitude);
     void requestWeatherByCity(const QString &cityName);
     void setCityName(const QString &cityName);

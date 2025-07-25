@@ -13,7 +13,7 @@
 
 #include "lxqtweatherwidget.h"
 
-// Простая имитация настроек для тестирования
+    // Simple settings simulation for testing
 class MockPluginSettings : public QObject, public IWeatherSettings
 {
     Q_OBJECT
@@ -50,10 +50,10 @@ public:
     {
         setupUI();
 
-        // Создаем настройки
+        // Create settings
         mSettings = new MockPluginSettings(this);
 
-        // Применяем настройки к виджету
+        // Apply settings to widget
         mWeatherWidget->updateSettings(mSettings);
     }
 
@@ -63,12 +63,12 @@ private slots:
     }
 
     void onSettingsChanged() {
-        // Обновляем настройки
+        // Update settings
         mSettings->setValue("update_interval", mIntervalSpinBox->value());
         mSettings->setValue("temperature_unit", mUnitComboBox->currentData().toString());
         mSettings->setValue("show_description", mShowDescCheckBox->isChecked());
 
-        // Применяем к виджету
+        // Apply to widget
         mWeatherWidget->updateSettings(mSettings);
     }
 
@@ -82,7 +82,7 @@ private:
 
         QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
 
-        // Виджет погоды
+        // Weather widget
         QGroupBox *weatherGroup = new QGroupBox("Weather Widget");
         QHBoxLayout *weatherLayout = new QHBoxLayout(weatherGroup);
 
@@ -96,7 +96,7 @@ private:
         weatherLayout->addStretch();
         mainLayout->addWidget(weatherGroup);
 
-        // Настройки
+        // Settings
         QGroupBox *settingsGroup = new QGroupBox("Settings");
         QFormLayout *settingsLayout = new QFormLayout(settingsGroup);
 
@@ -123,7 +123,7 @@ private:
 
         mainLayout->addWidget(settingsGroup);
 
-        // Информация
+        // Information
         QLabel *infoLabel = new QLabel(
             "Weather data provided by Open-Meteo.com (free, no API key required)\n"
             "Location determined by IP geolocation service"
@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    // Устанавливаем информацию о приложении
+    // Set application information
     app.setApplicationName("LXQt Weather Widget Test");
     app.setApplicationVersion("1.0");
     app.setOrganizationName("LXQt");

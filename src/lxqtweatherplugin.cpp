@@ -13,7 +13,7 @@
 #include <QMessageBox>
 #include <QDialogButtonBox>
 
-// Простой адаптер для PluginSettings к интерфейсу IWeatherSettings
+// Simple adapter from PluginSettings to IWeatherSettings interface
 class PluginSettingsAdapter : public IWeatherSettings
 {
 public:
@@ -45,9 +45,9 @@ LXQtWeatherPlugin::LXQtWeatherPlugin(const ILXQtPanelPluginStartupInfo &startupI
 {
     mWidget = new LXQtWeatherWidget();
 
-    // Устанавливаем настройки по умолчанию (без API ключа)
+    // Set default settings (no API key required)
     if (!settings()->contains("update_interval")) {
-        settings()->setValue("update_interval", 30); // 30 минут
+        settings()->setValue("update_interval", 30); // 30 minutes
     }
     if (!settings()->contains("temperature_unit")) {
         settings()->setValue("temperature_unit", "celsius");
@@ -56,7 +56,7 @@ LXQtWeatherPlugin::LXQtWeatherPlugin(const ILXQtPanelPluginStartupInfo &startupI
         settings()->setValue("show_description", true);
     }
 
-    // Используем адаптер для передачи настроек виджету
+    // Use adapter to pass settings to widget
     PluginSettingsAdapter adapter(settings());
     mWidget->updateSettings(&adapter);
 }
@@ -79,18 +79,18 @@ QDialog* LXQtWeatherPlugin::configureDialog()
 
     QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
 
-    // Группа общих настроек
+    // General settings group
     QGroupBox *generalGroup = new QGroupBox("General Settings");
     QFormLayout *generalLayout = new QFormLayout(generalGroup);
 
-    // Интервал обновления (погода + геолокация)
+    // Update interval (weather + geolocation)
     QSpinBox *updateIntervalSpinBox = new QSpinBox();
-    updateIntervalSpinBox->setRange(5, 120); // От 5 до 120 минут
+    updateIntervalSpinBox->setRange(5, 120); // From 5 to 120 minutes
     updateIntervalSpinBox->setSuffix(" minutes");
     updateIntervalSpinBox->setValue(settings()->value("update_interval", 30).toInt());
     generalLayout->addRow("Update Interval:", updateIntervalSpinBox);
 
-    // Единица измерения температуры
+    // Temperature unit
     QComboBox *temperatureUnitComboBox = new QComboBox();
     temperatureUnitComboBox->addItem("Celsius (°C)", "celsius");
     temperatureUnitComboBox->addItem("Fahrenheit (°F)", "fahrenheit");
@@ -102,14 +102,14 @@ QDialog* LXQtWeatherPlugin::configureDialog()
     }
     generalLayout->addRow("Temperature Unit:", temperatureUnitComboBox);
 
-    // Показывать описание погоды
+    // Show weather description
     QCheckBox *showDescriptionCheckBox = new QCheckBox();
     showDescriptionCheckBox->setChecked(settings()->value("show_description", true).toBool());
     generalLayout->addRow("Show Weather Description:", showDescriptionCheckBox);
 
     mainLayout->addWidget(generalGroup);
 
-    // Информационная группа
+    // Information group
     QGroupBox *infoGroup = new QGroupBox("Information");
     QVBoxLayout *infoLayout = new QVBoxLayout(infoGroup);
 
@@ -127,18 +127,18 @@ QDialog* LXQtWeatherPlugin::configureDialog()
 
     mainLayout->addStretch();
 
-    // Кнопки
+    // Buttons
     QDialogButtonBox *buttonBox = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         Qt::Horizontal, dialog);
 
     QObject::connect(buttonBox, &QDialogButtonBox::accepted, [=]() {
-        // Сохраняем настройки
+        // Save settings
         settings()->setValue("update_interval", updateIntervalSpinBox->value());
         settings()->setValue("temperature_unit", temperatureUnitComboBox->currentData().toString());
         settings()->setValue("show_description", showDescriptionCheckBox->isChecked());
 
-        // Обновляем виджет с помощью адаптера
+        // Update widget using adapter
         PluginSettingsAdapter adapter(settings());
         mWidget->updateSettings(&adapter);
 

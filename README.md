@@ -1,67 +1,67 @@
 # LXQt Weather Widget
 
-Виджет погоды для панели LXQt с визуализацией погодных условий и температуры на основе геолокации.
+A weather widget for LXQt panel with visualization of weather conditions and temperature based on geolocation.
 
-## ✨ Основные возможности
+## ✨ Key Features
 
-- **Автоматическое определение местоположения** через IP-адрес
-- **Отображение температуры** в Цельсиях или Фаренгейтах
-- **Погодные иконки** для различных условий (ясно, облачно, дождь, снег, туман, гроза)
-- **Описание погоды** (опционально)
-- **Настраиваемый интервал обновления** (5-120 минут)
-- **Tooltip с подробной информацией** (влажность, давление, ветер)
-- **Клик для обновления** данных
-- **Бесплатный API** - не требует регистрации и API ключей
+- **Automatic location detection** via IP address
+- **Temperature display** in Celsius or Fahrenheit
+- **Weather icons** for various conditions (clear, cloudy, rain, snow, fog, storm)
+- **Weather description** (optional)
+- **Configurable update interval** (5-120 minutes)
+- **Tooltip with detailed information** (humidity, pressure, wind)
+- **Click to refresh** data
+- **Free API** - no registration or API keys required
 
-## 🌤️ Источник данных
+## 🌤️ Data Source
 
-Виджет использует **[Open-Meteo.com](https://open-meteo.com/)** - бесплатный API погоды:
+The widget uses **[Open-Meteo.com](https://open-meteo.com/)** - a free weather API:
 
-- ✅ **Без регистрации** - не нужны API ключи
-- ✅ **Высокая точность** - данные от метеорологических служб
-- ✅ **Бесплатное использование** - без ограничений на количество запросов
-- ✅ **Экологически чистый** - работает на 100% возобновляемой энергии
+- ✅ **No registration** - no API keys needed
+- ✅ **High accuracy** - data from meteorological services
+- ✅ **Free usage** - no request limits
+- ✅ **Environmentally friendly** - runs on 100% renewable energy
 
-Геолокация определяется через **ip-api.com** с fallback на Москву.
+Geolocation is determined via **ip-api.com** with fallback to Moscow.
 
-## 📋 Требования
+## 📋 Requirements
 
-- **GCC 12+** (указано пользователем)
+- **GCC 12+** (as specified by user)
 - **CMake 3.16+**
 - **Qt5** (Core, Widgets, Network)
-- **LXQt development libraries** (для полной интеграции с панелью)
+- **LXQt development libraries** (for full panel integration)
 
-## 🔧 Сборка и установка
+## 🔧 Build and Installation
 
-### Автоматическая установка
+### Automatic Installation
 
 ```bash
-# Клонирование репозитория
+# Clone repository
 git clone <repository-url>
 cd lxqt-weather
 
-# Запуск скрипта установки
+# Run installation script
 chmod +x install.sh
 ./install.sh
 ```
 
-### Ручная сборка
+### Manual Build
 
 ```bash
-# Создание директории сборки
+# Create build directory
 mkdir build && cd build
 
-# Конфигурация CMake
+# Configure CMake
 cmake ..
 
-# Сборка проекта
+# Build project
 make -j$(nproc)
 
-# Установка в систему
+# Install to system
 sudo make install
 ```
 
-### Установка зависимостей
+### Installing Dependencies
 
 #### Ubuntu/Debian
 ```bash
@@ -80,119 +80,119 @@ sudo dnf install gcc-c++ cmake qt5-qtbase-devel lxqt-build-tools-devel
 sudo pacman -S base-devel cmake qt5-base lxqt-build-tools
 ```
 
-## 🎮 Тестирование
+## 🎮 Testing
 
-После сборки можно протестировать виджет без установки в панель:
+After building, you can test the widget without installing it to the panel:
 
 ```bash
-# Из директории build
+# From build directory
 ./weather-test
 
-# Или после установки
+# Or after installation
 weather-test
 ```
 
-Тестовое приложение позволяет:
-- Просматривать виджет погоды в отдельном окне
-- Настраивать параметры (интервал обновления, единицы температуры, показ описания)
-- Обновлять данные вручную кнопкой "Refresh"
+The test application allows you to:
+- View the weather widget in a separate window
+- Configure parameters (update interval, temperature units, show description)
+- Manually refresh data with the "Refresh" button
 
-## ⚙️ Настройка
+## ⚙️ Configuration
 
-Виджет не требует настройки API ключей. Основные настройки доступны через интерфейс панели LXQt:
+The widget doesn't require API key configuration. Main settings are available through the LXQt panel interface:
 
-### Доступные параметры:
-- **Интервал обновления**: 5-120 минут (по умолчанию: 30 минут)
-- **Единица температуры**: Цельсий/Фаренгейт (по умолчанию: Цельсий)
-- **Показывать описание**: Да/Нет (по умолчанию: Да)
+### Available Parameters:
+- **Update Interval**: 5-120 minutes (default: 30 minutes)
+- **Temperature Unit**: Celsius/Fahrenheit (default: Celsius)
+- **Show Description**: Yes/No (default: Yes)
 
-### Fallback локация:
-При невозможности определить местоположение автоматически используется Москва (55.7558°N, 37.6176°E).
+### Fallback Location:
+If automatic location detection is impossible, Moscow (55.7558°N, 37.6176°E) is used.
 
-## 🎯 Использование
+## 🎯 Usage
 
-1. **Добавление в панель**: Правый клик на панели LXQt → "Добавить виджеты" → "Weather"
-2. **Обновление данных**: Левый клик по виджету
-3. **Настройки**: Правый клик на виджете → "Настроить"
-4. **Подробная информация**: Наведите курсор на виджет для tooltip
+1. **Adding to panel**: Right-click on LXQt panel → "Add Widgets" → "Weather"
+2. **Refresh data**: Left-click on widget
+3. **Settings**: Right-click on widget → "Configure"
+4. **Detailed information**: Hover over widget for tooltip
 
-## 🌟 Иконки погоды
+## 🌟 Weather Icons
 
-| Погодные условия | Иконка | Описание |
-|------------------|---------|----------|
-| Ясно | ☀ | Чистое небо |
-| Малооблачно | ⛅ | Переменная облачность |
-| Облачно | ☁ | Пасмурно |
-| Дождь | 🌧 | Осадки |
-| Ливень | 🌦 | Кратковременный дождь |
-| Гроза | ⛈ | Грозовая активность |
-| Снег | 🌨 | Снегопад |
-| Туман | 🌫 | Туман/дымка |
+| Weather Conditions | Icon | Description |
+|-------------------|------|-------------|
+| Clear | ☀ | Clear sky |
+| Partly Cloudy | ⛅ | Variable cloudiness |
+| Cloudy | ☁ | Overcast |
+| Rain | 🌧 | Precipitation |
+| Shower | 🌦 | Brief rain |
+| Storm | ⛈ | Thunderstorm activity |
+| Snow | 🌨 | Snowfall |
+| Fog | 🌫 | Fog/haze |
 
-## 🚨 Устранение неполадок
+## 🚨 Troubleshooting
 
-### Виджет не отображает данные
-1. Проверьте интернет-соединение
-2. Убедитесь, что порты 80/443 не заблокированы
-3. Проверьте логи: `journalctl -f | grep weather`
+### Widget doesn't display data
+1. Check internet connection
+2. Ensure ports 80/443 are not blocked
+3. Check logs: `journalctl -f | grep weather`
 
-### Ошибка компиляции
-1. Убедитесь в наличии всех зависимостей
-2. Проверьте версию GCC: `gcc --version` (требуется 12+)
-3. Очистите кэш сборки: `rm -rf build && mkdir build`
+### Compilation error
+1. Ensure all dependencies are installed
+2. Check GCC version: `gcc --version` (requires 12+)
+3. Clear build cache: `rm -rf build && mkdir build`
 
-### Виджет не появляется в панели
-1. Перезапустите панель LXQt: `killall lxqt-panel && lxqt-panel &`
-2. Проверьте права на файлы плагина
-3. Убедитесь в правильной установке: `ls -la /usr/local/lib/libweather.so`
+### Widget doesn't appear in panel
+1. Restart LXQt panel: `killall lxqt-panel && lxqt-panel &`
+2. Check plugin file permissions
+3. Verify correct installation: `ls -la /usr/local/lib/libweather.so`
 
-## 🏗️ Архитектура
+## 🏗️ Architecture
 
 ```
 ├── src/
-│   ├── lxqtweatherplugin.{h,cpp}    # Основной плагин LXQt
-│   ├── lxqtweatherwidget.{h,cpp}    # UI виджет
-│   ├── weatherapi.{h,cpp}           # Open-Meteo API клиент
-│   ├── geolocation.{h,cpp}          # Сервис геолокации
-│   ├── main.cpp                     # Тестовое приложение
-│   └── resources.qrc                # Ресурсы Qt
+│   ├── lxqtweatherplugin.{h,cpp}    # Main LXQt plugin
+│   ├── lxqtweatherwidget.{h,cpp}    # UI widget
+│   ├── weatherapi.{h,cpp}           # Open-Meteo API client
+│   ├── geolocation.{h,cpp}          # Geolocation service
+│   ├── main.cpp                     # Test application
+│   └── resources.qrc                # Qt resources
 ├── data/
-│   ├── weather.desktop              # Описание плагина
-│   └── icons/                       # SVG иконки погоды
-├── CMakeLists.txt                   # Конфигурация сборки
-└── README.md                        # Документация
+│   ├── weather.desktop              # Plugin description
+│   └── icons/                       # Weather SVG icons
+├── CMakeLists.txt                   # Build configuration
+└── README.md                        # Documentation
 ```
 
-### Компоненты:
-- **LXQtWeatherPlugin**: Интерфейс с панелью LXQt
-- **LXQtWeatherWidget**: Основной UI виджет
-- **WeatherAPI**: HTTP клиент для Open-Meteo API
-- **GeoLocation**: Определение местоположения по IP
+### Components:
+- **LXQtWeatherPlugin**: Interface with LXQt panel
+- **LXQtWeatherWidget**: Main UI widget
+- **WeatherAPI**: HTTP client for Open-Meteo API
+- **GeoLocation**: IP-based location detection
 
-## 📝 Лицензия
+## 📝 License
 
-MIT License - см. файл [LICENSE](LICENSE)
+MIT License - see [LICENSE](LICENSE) file
 
-## 👥 Авторы
+## 👥 Authors
 
-- **Разработчик**: AI Assistant
-- **Заказчик**: LXQt panel widget development expert
-- **Год**: 2025
+- **Developer**: AI Assistant
+- **Client**: LXQt panel widget development expert
+- **Year**: 2025
 
-## 🔄 История изменений
+## 🔄 Changelog
 
 ### v1.1.0 (2025-01-15)
-- ✅ **Переход на Open-Meteo API** - убрана необходимость в API ключах
-- ✅ **Упрощенная настройка** - работает "из коробки"
-- ✅ **Улучшенная надежность** - бесплатный и стабильный API
-- ✅ **Экологичность** - API работает на возобновляемой энергии
+- ✅ **Migration to Open-Meteo API** - removed need for API keys
+- ✅ **Simplified setup** - works out of the box
+- ✅ **Improved reliability** - free and stable API
+- ✅ **Environmental friendliness** - API runs on renewable energy
 
 ### v1.0.0 (2025-01-15)
-- ✅ Первоначальная реализация с OpenWeatherMap API
-- ✅ Базовый функционал отображения погоды
-- ✅ Интеграция с панелью LXQt
-- ✅ Поддержка настроек и геолокации
+- ✅ Initial implementation with OpenWeatherMap API
+- ✅ Basic weather display functionality
+- ✅ LXQt panel integration
+- ✅ Settings and geolocation support
 
 ---
 
-**Примечание**: Данные о погоде предоставлены [Open-Meteo.com](https://open-meteo.com/). Геолокация определяется через [ip-api.com](http://ip-api.com/). 
+**Note**: Weather data provided by [Open-Meteo.com](https://open-meteo.com/). Geolocation determined via [ip-api.com](http://ip-api.com/). 
