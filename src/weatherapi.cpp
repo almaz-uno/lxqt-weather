@@ -11,6 +11,7 @@ const QString WeatherAPI::API_BASE_URL = "https://api.open-meteo.com/v1/forecast
 WeatherAPI::WeatherAPI(QObject *parent)
     : QObject(parent)
     , mNetworkManager(new QNetworkAccessManager(this))
+    , mCityName("")
 {
     connect(mNetworkManager, &QNetworkAccessManager::finished,
             this, &WeatherAPI::onNetworkReplyFinished);
@@ -47,6 +48,12 @@ void WeatherAPI::requestWeatherByCity(const QString &cityName)
     // Для городов нужно использовать геокодирование отдельно
     Q_UNUSED(cityName)
     emit errorOccurred("Open-Meteo requires coordinates. Please use location service.");
+}
+
+void WeatherAPI::setCityName(const QString &cityName)
+{
+    mCityName = cityName;
+    qDebug() << "City name set to:" << cityName;
 }
 
 void WeatherAPI::onNetworkReplyFinished(QNetworkReply *reply)
@@ -139,7 +146,13 @@ void WeatherAPI::processWeatherData(const QByteArray &data)
     weatherData["weather"] = weatherArray;
     weatherData["wind"] = wind;
     weatherData["dt"] = QDateTime::currentSecsSinceEpoch();
-    weatherData["name"] = "Current Location";
+
+    // Используем реальное название города если доступно
+    if (!mCityName.isEmpty()) {
+        weatherData["name"] = mCityName;
+    } else {
+        weatherData["name"] = "Current Location";
+    }
 
     // Добавляем координаты
     QJsonObject coord;

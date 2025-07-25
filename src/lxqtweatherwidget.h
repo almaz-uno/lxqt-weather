@@ -9,6 +9,7 @@
 #include <QPixmap>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QNetworkConfigurationManager>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QDateTime>
@@ -48,7 +49,9 @@ protected:
 private slots:
     void onWeatherDataReceived(const QJsonObject &data);
     void onLocationReceived(double latitude, double longitude);
+    void onLocationReceived(const QString &cityName);
     void onUpdateTimer();
+    void onNetworkConfigurationChanged();
 
 private:
     void setupUI();
@@ -65,6 +68,7 @@ private:
     WeatherAPI *mWeatherAPI;
     GeoLocation *mGeoLocation;
     QTimer *mUpdateTimer;
+    QNetworkConfigurationManager *mNetworkManager;
 
     // UI components
     QLabel *mIconLabel;
@@ -78,6 +82,7 @@ private:
 
     // Current data
     double mCurrentTemperature;
+    QString mCurrentCity;
     bool mHasValidData;
 };
 

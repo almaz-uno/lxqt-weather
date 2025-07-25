@@ -19,6 +19,7 @@ LXQtWeatherWidget::LXQtWeatherWidget(QWidget *parent)
     , mWeatherAPI(nullptr)
     , mGeoLocation(nullptr)
     , mUpdateTimer(nullptr)
+    , mNetworkManager(nullptr)
     , mIconLabel(nullptr)
     , mTemperatureLabel(nullptr)
     , mDescriptionLabel(nullptr)
@@ -26,6 +27,7 @@ LXQtWeatherWidget::LXQtWeatherWidget(QWidget *parent)
     , mTemperatureUnit("celsius")
     , mShowDescription(true)
     , mCurrentTemperature(0.0)
+    , mCurrentCity("")
     , mHasValidData(false)
 {
     setupUI();
@@ -50,7 +52,7 @@ void LXQtWeatherWidget::updateSettings(IWeatherSettings *settings)
     mTemperatureUnit = settings->value("temperature_unit", "celsius").toString();
     mShowDescription = settings->value("show_description", true).toBool();
 
-    // Обновляем таймер
+    // Обновляем таймер обновления
     if (mUpdateTimer) {
         mUpdateTimer->stop();
         mUpdateTimer->setInterval(mUpdateInterval * 60 * 1000); // Конвертируем в миллисекунды
@@ -153,9 +155,40 @@ void LXQtWeatherWidget::onLocationReceived(double latitude, double longitude)
     }
 }
 
+void LXQtWeatherWidget::onLocationReceived(const QString &cityName)
+{
+    qDebug() << "City name received:" << cityName;
+    mCurrentCity = cityName;
+
+    // Передаем название города в WeatherAPI
+    if (mWeatherAPI) {
+        mWeatherAPI->setCityName(cityName);
+    }
+
+    // Обновляем тултип если есть данные о погоде
+    if (mHasValidData && mWeatherAPI) {
+        // Можно обновить тултип с новым названием города
+        updateTooltip(QJsonObject()); // Передаем пустой объект, так как данные уже есть
+    }
+}
+
 void LXQtWeatherWidget::onUpdateTimer()
 {
     refreshWeather();
+}
+
+void LXQtWeatherWidget::onNetworkConfigurationChanged()
+{
+    qDebug() << "Network configuration changed - updating location...";
+
+    if (!mGeoLocation) {
+        qWarning() << "Geolocation service not initialized";
+        return;
+    }
+
+    // При изменении сети сразу обновляем геолокацию
+    // Это поможет при включении/выключении VPN
+    mGeoLocation->requestLocation();
 }
 
 void LXQtWeatherWidget::setupUI()
@@ -217,9 +250,11 @@ void LXQtWeatherWidget::setupServices()
 
     // Создаем сервис геолокации
     mGeoLocation = new GeoLocation(this);
-    // Явно указываем тип сигнала для разрешения перегрузки
+    // Подключаем сигналы геолокации
     connect(mGeoLocation, QOverload<double, double>::of(&GeoLocation::locationReceived),
-            this, &LXQtWeatherWidget::onLocationReceived);
+            this, QOverload<double, double>::of(&LXQtWeatherWidget::onLocationReceived));
+    connect(mGeoLocation, QOverload<const QString&>::of(&GeoLocation::locationReceived),
+            this, QOverload<const QString&>::of(&LXQtWeatherWidget::onLocationReceived));
     connect(mGeoLocation, &GeoLocation::errorOccurred,
             this, [this](const QString &error) {
                 qWarning() << "Geolocation error:" << error;
@@ -227,13 +262,20 @@ void LXQtWeatherWidget::setupServices()
                 onLocationReceived(55.7558, 37.6176); // Москва
             });
 
-    // Настраиваем таймер обновления
+    // Настраиваем таймер обновления (погода + геолокация)
     mUpdateTimer = new QTimer(this);
     mUpdateTimer->setInterval(mUpdateInterval * 60 * 1000); // Конвертируем минуты в миллисекунды
     connect(mUpdateTimer, &QTimer::timeout, this, &LXQtWeatherWidget::onUpdateTimer);
     mUpdateTimer->start();
 
+    // Настраиваем мониторинг сетевых изменений
+    mNetworkManager = new QNetworkConfigurationManager(this);
+    connect(mNetworkManager, &QNetworkConfigurationManager::configurationChanged,
+            this, &LXQtWeatherWidget::onNetworkConfigurationChanged);
+
     qDebug() << "Weather services initialized";
+    qDebug() << "Update interval:" << mUpdateInterval << "minutes (weather + location)";
+    qDebug() << "Network monitoring enabled";
 }
 
 void LXQtWeatherWidget::updateDisplay(const QString &description, const QString &iconCode)
@@ -330,8 +372,13 @@ void LXQtWeatherWidget::updateTooltip(const QJsonObject &data)
 {
     QString tooltipText;
 
-    if (data.contains("name")) {
-        tooltipText += "Location: " + data["name"].toString() + "\n";
+    // Используем реальное название города если доступно, иначе из данных
+    QString locationName = mCurrentCity;
+    if (locationName.isEmpty() && data.contains("name")) {
+        locationName = data["name"].toString();
+    }
+    if (!locationName.isEmpty()) {
+        tooltipText += "Location: " + locationName + "\n";
     }
 
     if (data.contains("main")) {

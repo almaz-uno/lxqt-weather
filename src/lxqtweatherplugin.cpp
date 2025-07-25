@@ -83,7 +83,7 @@ QDialog* LXQtWeatherPlugin::configureDialog()
     QGroupBox *generalGroup = new QGroupBox("General Settings");
     QFormLayout *generalLayout = new QFormLayout(generalGroup);
 
-    // Интервал обновления
+    // Интервал обновления (погода + геолокация)
     QSpinBox *updateIntervalSpinBox = new QSpinBox();
     updateIntervalSpinBox->setRange(5, 120); // От 5 до 120 минут
     updateIntervalSpinBox->setSuffix(" minutes");
@@ -116,7 +116,8 @@ QDialog* LXQtWeatherPlugin::configureDialog()
     QLabel *infoLabel = new QLabel(
         "Weather data provided by Open-Meteo.com\n"
         "Open-Meteo is a free weather API that doesn't require registration.\n"
-        "Location is determined automatically using your IP address."
+        "Location is determined automatically using your IP address.\n"
+        "Location updates automatically when network changes (VPN, etc.)."
     );
     infoLabel->setWordWrap(true);
     infoLabel->setStyleSheet("color: #666; font-size: 11px;");
