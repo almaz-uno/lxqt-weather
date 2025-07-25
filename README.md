@@ -1,5 +1,7 @@
 # LXQt Weather Widget
 
+**Fully AI-generated project with Cursor**
+
 A weather widget for LXQt panel with visualization of weather conditions and temperature based on geolocation.
 
 ## ✨ Key Features
