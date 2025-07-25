@@ -10,6 +10,8 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkConfigurationManager>
+#include <QDesktopServices>
+#include <QUrl>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QDateTime>
@@ -58,6 +60,7 @@ private:
     void setupServices();
     void updateDisplay(const QString &description = QString(), const QString &iconCode = QString());
     void updateTooltip(const QJsonObject &data);
+    void openYandexWeatherMap();
 
     QString formatTemperature(double temperature) const;
     QString getWeatherDescription(int weatherCode) const;
@@ -83,6 +86,8 @@ private:
     // Current data
     double mCurrentTemperature;
     QString mCurrentCity;
+    double mCurrentLatitude;
+    double mCurrentLongitude;
     bool mHasValidData;
 };
 

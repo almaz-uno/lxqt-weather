@@ -28,6 +28,8 @@ LXQtWeatherWidget::LXQtWeatherWidget(QWidget *parent)
     , mShowDescription(true)
     , mCurrentTemperature(0.0)
     , mCurrentCity("")
+    , mCurrentLatitude(0.0)
+    , mCurrentLongitude(0.0)
     , mHasValidData(false)
 {
     setupUI();
@@ -104,6 +106,8 @@ void LXQtWeatherWidget::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         refreshWeather();
+    } else if (event->button() == Qt::MiddleButton) {
+        openYandexWeatherMap();
     }
     QWidget::mousePressEvent(event);
 }
@@ -149,6 +153,10 @@ void LXQtWeatherWidget::onLocationReceived(double latitude, double longitude)
 {
     qDebug() << "Location received:" << latitude << "," << longitude;
 
+    // Сохраняем текущие координаты
+    mCurrentLatitude = latitude;
+    mCurrentLongitude = longitude;
+
     if (mWeatherAPI) {
         // Используем новый метод для Open-Meteo
         mWeatherAPI->requestWeatherByCoordinates(latitude, longitude);
@@ -179,16 +187,35 @@ void LXQtWeatherWidget::onUpdateTimer()
 
 void LXQtWeatherWidget::onNetworkConfigurationChanged()
 {
-    qDebug() << "Network configuration changed - updating location...";
+    qDebug() << "Network configuration changed - refreshing weather and location...";
 
     if (!mGeoLocation) {
         qWarning() << "Geolocation service not initialized";
         return;
     }
 
-    // При изменении сети сразу обновляем геолокацию
-    // Это поможет при включении/выключении VPN
-    mGeoLocation->requestLocation();
+    // При изменении сети обновляем погоду (которая включает обновление геолокации)
+    refreshWeather();
+}
+
+void LXQtWeatherWidget::openYandexWeatherMap()
+{
+    if (mCurrentLatitude == 0.0 && mCurrentLongitude == 0.0) {
+        qWarning() << "No valid coordinates available for opening weather map";
+        return;
+    }
+
+    // Формируем URL для Яндекс.Погоды с координатами
+    QString url = QString("https://yandex.ru/pogoda/maps/nowcast?lat=%1&lon=%2")
+                     .arg(mCurrentLatitude, 0, 'f', 6)
+                     .arg(mCurrentLongitude, 0, 'f', 6);
+
+    qDebug() << "Opening Yandex weather map:" << url;
+
+    // Открываем URL в браузере по умолчанию
+    if (!QDesktopServices::openUrl(QUrl(url))) {
+        qWarning() << "Failed to open Yandex weather map URL";
+    }
 }
 
 void LXQtWeatherWidget::setupUI()
@@ -410,7 +437,8 @@ void LXQtWeatherWidget::updateTooltip(const QJsonObject &data)
     }
 
     tooltipText += "\nLast updated: " + QDateTime::currentDateTime().toString("hh:mm:ss");
-    tooltipText += "\nClick to refresh";
+    tooltipText += "\nLeft click: refresh weather + location";
+    tooltipText += "\nMiddle click: open Yandex weather map";
 
     setToolTip(tooltipText);
 }
