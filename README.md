@@ -35,51 +35,63 @@ Geolocation is determined via **ip-api.com** with fallback to Moscow.
 
 ## 🔧 Build and Installation
 
-### Automatic Installation
+### Automatic Installation (Recommended)
+
+The installation script will automatically detect and install all required dependencies:
 
 ```bash
 # Clone repository
 git clone <repository-url>
 cd lxqt-weather
 
-# Run installation script
+# Run installation script (handles dependencies automatically)
 chmod +x install.sh
 ./install.sh
 ```
 
+The script will:
+- ✅ Check for required build tools (gcc, g++, cmake, make, pkg-config)
+- ✅ Detect and install Qt5 development packages
+- ✅ Install LXQt development libraries
+- ✅ Build the project
+- ✅ Install the widget to system directories
+- ✅ Restart LXQt panel automatically
+
+**Supported package managers:** APT (Debian/Ubuntu), Pacman (Arch), DNF (Fedora/RHEL)
+
 ### Manual Build
 
+If you prefer manual control:
+
 ```bash
-# Create build directory
+# Install dependencies first (see below)
+# Then build:
 mkdir build && cd build
-
-# Configure CMake
-cmake ..
-
-# Build project
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
-
-# Install to system
 sudo make install
 ```
 
-### Installing Dependencies
+### Manual Dependency Installation
+
+Only needed if not using the automatic installation script:
 
 #### Ubuntu/Debian
 ```bash
 sudo apt update
-sudo apt install build-essential cmake qt5-default qtbase5-dev \
-                 libqt5widgets5 libqt5network5 liblxqt0-dev
+sudo apt install build-essential cmake pkg-config qtbase5-dev \
+                 libqt5x11extras5-dev liblxqt1-dev
 ```
 
 #### Fedora/CentOS/RHEL
 ```bash
-sudo dnf install gcc-c++ cmake qt5-qtbase-devel lxqt-build-tools-devel
+sudo dnf install gcc-c++ cmake pkgconfig qt5-qtbase-devel \
+                 qt5-qtx11extras-devel lxqt-build-tools lxqt-panel-devel
 ```
 
 #### Arch Linux
 ```bash
-sudo pacman -S base-devel cmake qt5-base lxqt-build-tools
+sudo pacman -S base-devel cmake pkgconf qt5-base qt5-x11extras lxqt-build-tools lxqt-panel
 ```
 
 ## 🎮 Testing
@@ -98,6 +110,19 @@ The test application allows you to:
 - View the weather widget in a separate window
 - Configure parameters (update interval, temperature units, show description)
 - Manually refresh data with the "Refresh" button
+- Debug network connectivity issues
+
+### Testing Network Connectivity
+
+If you experience connection issues, you can test the APIs manually:
+
+```bash
+# Test geolocation service
+curl "http://ip-api.com/json/"
+
+# Test weather API (replace coordinates with your location)
+curl "https://api.open-meteo.com/v1/forecast?latitude=55.7558&longitude=37.6176&current_weather=true"
+```
 
 ## ⚙️ Configuration
 
@@ -146,7 +171,7 @@ If automatic location detection is impossible, Moscow (55.7558°N, 37.6176°E) i
 ### Widget doesn't appear in panel
 1. Restart LXQt panel: `killall lxqt-panel && lxqt-panel &`
 2. Check plugin file permissions
-3. Verify correct installation: `ls -la /usr/local/lib/libweather.so`
+3. Verify correct installation: `ls -la /usr/lib/x86_64-linux-gnu/lxqt-panel/libweather.so`
 
 ## 🏗️ Architecture
 

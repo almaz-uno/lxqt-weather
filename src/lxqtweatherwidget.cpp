@@ -271,8 +271,20 @@ void LXQtWeatherWidget::setupServices()
             this, [this](const QString &error) {
                 qWarning() << "Weather API error:" << error;
                 if (mDescriptionLabel) {
-                    mDescriptionLabel->setText("Error: " + error);
+                    // Show more user-friendly error messages
+                    if (error.contains("timed out") || error.contains("timeout")) {
+                        mDescriptionLabel->setText("Network timeout");
+                        mTemperatureLabel->setText("--°");
+                    } else if (error.contains("Host not found") || error.contains("Network unreachable")) {
+                        mDescriptionLabel->setText("No connection");
+                        mTemperatureLabel->setText("--°");
+                    } else {
+                        mDescriptionLabel->setText("Update failed");
+                        mTemperatureLabel->setText("--°");
+                    }
                 }
+                // Reset data validity on error
+                mHasValidData = false;
             });
 
     // Create geolocation service

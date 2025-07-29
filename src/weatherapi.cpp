@@ -6,19 +6,37 @@
 #include <QDebug>
 
 // Open-Meteo API - free and no keys required!
-const QString WeatherAPI::API_BASE_URL = "https://api.open-meteo.com/v1/forecast";
+const QString WeatherAPI::API_BASE_URL = "http://api.open-meteo.com/v1/forecast";
 
 WeatherAPI::WeatherAPI(QObject *parent)
     : QObject(parent)
     , mNetworkManager(new QNetworkAccessManager(this))
     , mCityName("")
+    , mRetryTimer(new QTimer(this))
+    , mRetryCount(0)
+    , mLastLatitude(0.0)
+    , mLastLongitude(0.0)
 {
     connect(mNetworkManager, &QNetworkAccessManager::finished,
             this, &WeatherAPI::onNetworkReplyFinished);
+
+    // Setup retry timer
+    mRetryTimer->setSingleShot(true);
+    connect(mRetryTimer, &QTimer::timeout, this, &WeatherAPI::retryRequest);
 }
 
 void WeatherAPI::requestWeatherByCoordinates(double latitude, double longitude)
 {
+    // Save coordinates for retry attempts
+    mLastLatitude = latitude;
+    mLastLongitude = longitude;
+    mRetryCount = 0; // Reset retry count for new request
+
+    // Stop any pending retry timer
+    if (mRetryTimer->isActive()) {
+        mRetryTimer->stop();
+    }
+
     QUrl url(API_BASE_URL);
     QUrlQuery query;
 
@@ -34,6 +52,13 @@ void WeatherAPI::requestWeatherByCoordinates(double latitude, double longitude)
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader, "LXQt-Weather-Widget/1.0");
+    
+    // Set timeout to 10 seconds to avoid long waits
+    request.setTransferTimeout(10000);
+    
+    // Set raw headers for better compatibility - don't ask for compression
+    request.setRawHeader("Accept", "application/json");
+    // Don't set Accept-Encoding to avoid compression issues
 
     QNetworkReply *reply = mNetworkManager->get(request);
     connect(reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::errorOccurred),
@@ -70,9 +95,34 @@ void WeatherAPI::onNetworkReplyFinished(QNetworkReply *reply)
 
     if (reply->error() != QNetworkReply::NoError) {
         qWarning() << "Network error occurred:" << reply->error() << reply->errorString();
+
+        // Check if this is a retryable error and we haven't exceeded retry limit
+        bool shouldRetry = false;
+        QNetworkReply::NetworkError error = reply->error();
+        if ((error == QNetworkReply::TimeoutError ||
+             error == QNetworkReply::HostNotFoundError ||
+             error == QNetworkReply::NetworkSessionFailedError ||
+             error == QNetworkReply::TemporaryNetworkFailureError) &&
+             mRetryCount < 2) {
+            shouldRetry = true;
+        }
+
+        if (shouldRetry) {
+            mRetryCount++;
+            int retryDelay = mRetryCount * 5000; // 5s, 10s delays
+
+            qDebug() << "Scheduling retry attempt" << mRetryCount << "in" << retryDelay << "ms";
+            mRetryTimer->start(retryDelay);
+            return;
+        }
+
+        // No retry or exceeded retry limit
         emit errorOccurred(reply->errorString());
         return;
     }
+
+    // Success - reset retry count
+    mRetryCount = 0;
 
     QByteArray data = reply->readAll();
     qDebug() << "Received data size:" << data.size() << "bytes";
@@ -90,18 +140,67 @@ void WeatherAPI::onNetworkReplyFinished(QNetworkReply *reply)
 void WeatherAPI::onNetworkError(QNetworkReply::NetworkError error)
 {
     QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
-    if (reply) {
-        emit errorOccurred(QString("Network error: %1").arg(reply->errorString()));
-        reply->deleteLater();
+    if (!reply) return;
+
+    QString errorString = reply->errorString();
+    qWarning() << "Network error occurred:" << error << errorString;
+
+    // Check if this is a timeout or network connectivity error
+    bool shouldRetry = false;
+    if (error == QNetworkReply::TimeoutError ||
+        error == QNetworkReply::HostNotFoundError ||
+        error == QNetworkReply::NetworkSessionFailedError ||
+        error == QNetworkReply::TemporaryNetworkFailureError) {
+        shouldRetry = true;
     }
+
+    // Retry up to 2 times with exponential backoff
+    if (shouldRetry && mRetryCount < 2) {
+        mRetryCount++;
+        int retryDelay = mRetryCount * 5000; // 5s, 10s delays
+
+        qDebug() << "Scheduling retry attempt" << mRetryCount << "in" << retryDelay << "ms";
+        mRetryTimer->start(retryDelay);
+
+        reply->deleteLater();
+        return;
+    }
+
+    // No more retries or non-retryable error
+    emit errorOccurred(errorString);
+    reply->deleteLater();
 }
 
 void WeatherAPI::processWeatherData(const QByteArray &data)
 {
+    QByteArray processedData = data;
+    
+    // Check if data is gzip compressed (starts with \x1f\x8b or looks like binary)
+    if (data.size() > 2 && ((unsigned char)data[0] == 0x1f && (unsigned char)data[1] == 0x8b)) {
+        qDebug() << "Data is gzip compressed, decompressing...";
+        processedData = qUncompress(data);
+        if (processedData.isEmpty()) {
+            emit errorOccurred("Failed to decompress gzip data");
+            return;
+        }
+    } else if (data.size() > 0 && (unsigned char)data[0] == 0x78) {
+        // Check for zlib/deflate compression (starts with 0x78)
+        qDebug() << "Data is zlib compressed, decompressing...";
+        processedData = qUncompress(data);
+        if (processedData.isEmpty()) {
+            emit errorOccurred("Failed to decompress zlib data");
+            return;
+        }
+    }
+    
+    qDebug() << "Raw data received:" << processedData.left(200) << "..."; // Show first 200 chars
+    
     QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+    QJsonDocument doc = QJsonDocument::fromJson(processedData, &parseError);
 
     if (parseError.error != QJsonParseError::NoError) {
+        qWarning() << "JSON parse error at offset" << parseError.offset << ":" << parseError.errorString();
+        qWarning() << "Data around error:" << processedData.mid(qMax(0, parseError.offset - 20), 40);
         emit errorOccurred(QString("JSON parse error: %1").arg(parseError.errorString()));
         return;
     }
@@ -234,5 +333,14 @@ QString WeatherAPI::getWeatherDescription(int weatherCode) const
         case 96: return "Thunderstorm with slight hail";
         case 99: return "Thunderstorm with heavy hail";
         default: return "Unknown";
+    }
+}
+
+void WeatherAPI::retryRequest()
+{
+    qDebug() << "Retrying weather request, attempt" << mRetryCount;
+
+    if (mLastLatitude != 0.0 || mLastLongitude != 0.0) {
+        requestWeatherByCoordinates(mLastLatitude, mLastLongitude);
     }
 }

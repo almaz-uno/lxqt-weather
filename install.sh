@@ -37,12 +37,14 @@ check_dependencies() {
     print_status "Checking system dependencies..."
 
     local missing_deps=()
+    local missing_dev_packages=()
 
     # Check for required tools
     command -v gcc >/dev/null 2>&1 || missing_deps+=("gcc")
     command -v g++ >/dev/null 2>&1 || missing_deps+=("g++")
     command -v cmake >/dev/null 2>&1 || missing_deps+=("cmake")
     command -v make >/dev/null 2>&1 || missing_deps+=("make")
+    command -v pkg-config >/dev/null 2>&1 || missing_deps+=("pkg-config")
 
     # Check GCC version
     if command -v gcc >/dev/null 2>&1; then
@@ -53,30 +55,119 @@ check_dependencies() {
         fi
     fi
 
-    if [ ${#missing_deps[@]} -ne 0 ]; then
-        print_error "Missing dependencies: ${missing_deps[*]}"
-        print_status "Please install them using your package manager:"
+    # Check for Qt5 development packages
+    if ! pkg-config --exists Qt5Core Qt5Widgets Qt5Network 2>/dev/null; then
+        missing_dev_packages+=("qtbase5-dev")
+    fi
 
-        # Detect package manager and suggest installation command
-        if command -v apt >/dev/null 2>&1; then
-            echo "  sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev liblxqt2-dev lxqt2-build-tools"
-        elif command -v pacman >/dev/null 2>&1; then
-            echo "  sudo pacman -S gcc cmake qt6-base qt6-tools lxqt2-build-tools lxqt"
-        elif command -v dnf >/dev/null 2>&1; then
-            echo "  sudo dnf install gcc-c++ cmake qt6-qtbase-devel qt6-qttools-devel lxqt-build-tools lxqt-panel-devel"
-        else
-            echo "  Install: gcc, g++, cmake, make, qt6-dev, lxqt-dev packages"
+    if ! pkg-config --exists Qt5X11Extras 2>/dev/null; then
+        missing_dev_packages+=("libqt5x11extras5-dev")
+    fi
+
+    # Check for LXQt development packages
+    if ! pkg-config --exists lxqt 2>/dev/null; then
+        missing_dev_packages+=("liblxqt1-dev")
+    fi
+
+    # Install missing dependencies automatically
+    if [ ${#missing_deps[@]} -ne 0 ] || [ ${#missing_dev_packages[@]} -ne 0 ]; then
+        if [ ${#missing_deps[@]} -ne 0 ]; then
+            print_error "Missing build tools: ${missing_deps[*]}"
+        fi
+        if [ ${#missing_dev_packages[@]} -ne 0 ]; then
+            print_error "Missing development packages: ${missing_dev_packages[*]}"
         fi
 
-        exit 1
+        print_status "Attempting to install missing dependencies..."
+
+        # Detect package manager and install dependencies
+        if command -v apt >/dev/null 2>&1; then
+            local all_packages=()
+
+            # Add build tools if missing
+            if [ ${#missing_deps[@]} -ne 0 ]; then
+                all_packages+=("build-essential" "cmake" "pkg-config")
+            fi
+
+            # Add development packages
+            all_packages+=("${missing_dev_packages[@]}")
+
+            print_status "Installing packages: ${all_packages[*]}"
+            sudo apt update && sudo apt install -y "${all_packages[@]}"
+
+        elif command -v pacman >/dev/null 2>&1; then
+            local all_packages=()
+
+            if [ ${#missing_deps[@]} -ne 0 ]; then
+                all_packages+=("base-devel" "cmake" "pkgconf")
+            fi
+
+            # Map Debian package names to Arch package names
+            for pkg in "${missing_dev_packages[@]}"; do
+                case "$pkg" in
+                    "qtbase5-dev") all_packages+=("qt5-base") ;;
+                    "libqt5x11extras5-dev") all_packages+=("qt5-x11extras") ;;
+                    "liblxqt1-dev") all_packages+=("lxqt-build-tools" "lxqt-panel") ;;
+                esac
+            done
+
+            print_status "Installing packages: ${all_packages[*]}"
+            sudo pacman -S --noconfirm "${all_packages[@]}"
+
+        elif command -v dnf >/dev/null 2>&1; then
+            local all_packages=()
+
+            if [ ${#missing_deps[@]} -ne 0 ]; then
+                all_packages+=("gcc-c++" "cmake" "make" "pkgconfig")
+            fi
+
+            # Map Debian package names to Fedora package names
+            for pkg in "${missing_dev_packages[@]}"; do
+                case "$pkg" in
+                    "qtbase5-dev") all_packages+=("qt5-qtbase-devel") ;;
+                    "libqt5x11extras5-dev") all_packages+=("qt5-qtx11extras-devel") ;;
+                    "liblxqt1-dev") all_packages+=("lxqt-build-tools" "lxqt-panel-devel") ;;
+                esac
+            done
+
+            print_status "Installing packages: ${all_packages[*]}"
+            sudo dnf install -y "${all_packages[@]}"
+
+        else
+            print_error "Unknown package manager. Please install the following manually:"
+            echo "Build tools: gcc, g++, cmake, make, pkg-config"
+            echo "Qt5 development: qtbase5-dev, libqt5x11extras5-dev"
+            echo "LXQt development: liblxqt1-dev, lxqt-build-tools"
+            exit 1
+        fi
+
+        # Re-check dependencies after installation
+        print_status "Verifying installation..."
+        if ! pkg-config --exists Qt5Core Qt5Widgets Qt5Network Qt5X11Extras lxqt 2>/dev/null; then
+            print_error "Some dependencies are still missing after installation. Please check the error messages above."
+            exit 1
+        fi
     fi
 
     print_status "All dependencies are satisfied"
+
+    # Show brief summary of what's installed
+    if command -v pkg-config >/dev/null 2>&1; then
+        if pkg-config --exists Qt5Core Qt5Widgets Qt5Network Qt5X11Extras lxqt 2>/dev/null; then
+            qt_version=$(pkg-config --modversion Qt5Core 2>/dev/null || echo "unknown")
+            lxqt_version=$(pkg-config --modversion lxqt 2>/dev/null || echo "unknown")
+            print_status "Found Qt5 version: $qt_version"
+            print_status "Found LXQt version: $lxqt_version"
+        fi
+    fi
 }
 
 # Build the project
 build_project() {
     print_status "Building LXQt Weather Widget..."
+
+    # Store current directory
+    local original_dir=$(pwd)
 
     # Create build directory
     if [ -d "build" ]; then
@@ -95,6 +186,9 @@ build_project() {
     print_status "Compiling..."
     make -j$(nproc)
 
+    # Return to original directory
+    cd "$original_dir"
+
     print_status "Build completed successfully"
 }
 
@@ -107,11 +201,16 @@ install_plugin() {
         exit 1
     fi
 
+    # Store current directory
+    local original_dir=$(pwd)
     cd build
 
     # Install
     print_status "Installing plugin (may require sudo password)..."
     sudo make install
+
+    # Return to original directory
+    cd "$original_dir"
 
     print_status "Installation completed"
 }
@@ -169,6 +268,10 @@ main() {
         "restart")
             restart_panel
             ;;
+        "help"|"-h"|"--help")
+            # Show help by falling through to default case
+            main "invalid"
+            ;;
         "all")
             check_root
             check_dependencies
@@ -178,14 +281,33 @@ main() {
             show_config_instructions
             ;;
         *)
-            echo "Usage: $0 [check|build|install|restart|all]"
+            echo "LXQt Weather Widget Installation Script"
+            echo "========================================"
+            echo
+            echo "Usage: $0 [command]"
             echo
             echo "Commands:"
-            echo "  check     - Check system dependencies"
-            echo "  build     - Build the project"
-            echo "  install   - Install the plugin"
-            echo "  restart   - Restart LXQt panel"
-            echo "  all       - Do everything (default)"
+            echo "  check     - Check and install system dependencies"
+            echo "  build     - Build the project (includes dependency check)"
+            echo "  install   - Install the built plugin to system"
+            echo "  restart   - Restart LXQt panel to load the widget"
+            echo "  all       - Complete installation (default - recommended)"
+            echo "  help      - Show this help message"
+            echo
+            echo "Examples:"
+            echo "  $0              # Complete automatic installation"
+            echo "  $0 all          # Same as above"
+            echo "  $0 check        # Only check/install dependencies"
+            echo "  $0 build        # Build after dependencies are satisfied"
+            echo
+            echo "The script will automatically:"
+            echo "  • Detect your package manager (apt/pacman/dnf)"
+            echo "  • Install required Qt5 and LXQt development packages"
+            echo "  • Build and install the weather widget"
+            echo "  • Restart LXQt panel to load the new widget"
+            echo
+            echo "After installation, add the widget through:"
+            echo "  Panel → Configure Panel → Widgets → Add Weather Widget"
             exit 1
             ;;
     esac

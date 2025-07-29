@@ -32,6 +32,10 @@ private slots:
 private:
     QNetworkAccessManager *mNetworkManager;
     QString mCityName;
+    QTimer *mRetryTimer;
+    int mRetryCount;
+    double mLastLatitude;
+    double mLastLongitude;
 
     // Open-Meteo API endpoint
     static const QString API_BASE_URL;
@@ -39,6 +43,7 @@ private:
     void processWeatherData(const QByteArray &data);
     QString getWeatherIconFromCode(int weatherCode) const;
     QString getWeatherDescription(int weatherCode) const;
+    void retryRequest();
 };
 
 #endif // WEATHERAPI_H
