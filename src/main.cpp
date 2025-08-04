@@ -10,6 +10,7 @@
 #include <QCheckBox>
 #include <QGroupBox>
 #include <QFormLayout>
+#include <QDebug>
 
 #include "lxqtweatherwidget.h"
 
@@ -75,21 +76,56 @@ private slots:
 private:
     void setupUI() {
         setWindowTitle("LXQt Weather Widget Test - Open-Meteo API");
-        setFixedSize(400, 200);
+
+        // Calculate DPI-aware window size
+        int dpi = logicalDpiX();
+        double scaleFactor = dpi / 96.0;
+        int windowWidth = qRound(400 * scaleFactor);
+        int windowHeight = qRound(250 * scaleFactor); // Увеличиваем высоту
+        setMinimumSize(windowWidth, windowHeight);
+        resize(windowWidth, windowHeight); // Устанавливаем начальный размер
 
         QWidget *centralWidget = new QWidget();
         setCentralWidget(centralWidget);
 
         QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
 
+        // Calculate DPI-aware spacing and margins
+        int layoutSpacing = qMax(4, qRound(6 * scaleFactor));
+        int layoutMargin = qMax(6, qRound(9 * scaleFactor));
+        mainLayout->setSpacing(layoutSpacing);
+        mainLayout->setContentsMargins(layoutMargin, layoutMargin, layoutMargin, layoutMargin);
+
         // Weather widget
         QGroupBox *weatherGroup = new QGroupBox("Weather Widget");
+
+        // Apply DPI-aware font size to group box title
+        int groupTitleFontSize = qMax(10, qRound(12 * scaleFactor));
+        weatherGroup->setStyleSheet(QString("QGroupBox::title { font-size: %1px; font-weight: bold; }").arg(groupTitleFontSize));
+
         QHBoxLayout *weatherLayout = new QHBoxLayout(weatherGroup);
 
+        // Apply DPI-aware spacing to weather layout
+        int groupSpacing = qMax(4, qRound(6 * scaleFactor));
+        int groupMargin = qMax(4, qRound(6 * scaleFactor));
+        weatherLayout->setSpacing(groupSpacing);
+        weatherLayout->setContentsMargins(groupMargin, groupMargin, groupMargin, groupMargin);
+
         mWeatherWidget = new LXQtWeatherWidget();
+
+        // Debug: Print widget size info
+        qDebug() << "DPI:" << logicalDpiX() << "Scale factor:" << (logicalDpiX() / 96.0);
+        qDebug() << "Widget size hint:" << mWeatherWidget->sizeHint();
+        qDebug() << "Widget minimum size:" << mWeatherWidget->minimumSize();
+
         weatherLayout->addWidget(mWeatherWidget);
 
         QPushButton *refreshButton = new QPushButton("Refresh");
+
+        // Apply DPI-aware font size to refresh button
+        int buttonFontSize = qMax(10, qRound(11 * scaleFactor));
+        refreshButton->setStyleSheet(QString("font-size: %1px;").arg(buttonFontSize));
+
         connect(refreshButton, &QPushButton::clicked, this, &TestWindow::onRefreshClicked);
         weatherLayout->addWidget(refreshButton);
 
@@ -98,28 +134,57 @@ private:
 
         // Settings
         QGroupBox *settingsGroup = new QGroupBox("Settings");
+        settingsGroup->setStyleSheet(QString("QGroupBox::title { font-size: %1px; font-weight: bold; }").arg(groupTitleFontSize));
+
         QFormLayout *settingsLayout = new QFormLayout(settingsGroup);
+
+        // Apply DPI-aware spacing to settings layout
+        settingsLayout->setSpacing(qMax(4, qRound(6 * scaleFactor)));
+        settingsLayout->setContentsMargins(groupMargin, groupMargin, groupMargin, groupMargin);
+
+        // Apply DPI-aware font size to form labels
+        int labelFontSize = qMax(9, qRound(10 * scaleFactor));
+        settingsLayout->setLabelAlignment(Qt::AlignLeft);
+
+        // Create labels with DPI-aware font sizes
+        QLabel *intervalLabel = new QLabel("Update Interval:");
+        intervalLabel->setStyleSheet(QString("font-size: %1px;").arg(labelFontSize));
+
+        QLabel *unitLabel = new QLabel("Temperature Unit:");
+        unitLabel->setStyleSheet(QString("font-size: %1px;").arg(labelFontSize));
+
+        QLabel *descLabel = new QLabel("Show Description:");
+        descLabel->setStyleSheet(QString("font-size: %1px;").arg(labelFontSize));
 
         mIntervalSpinBox = new QSpinBox();
         mIntervalSpinBox->setRange(5, 120);
         mIntervalSpinBox->setValue(30);
         mIntervalSpinBox->setSuffix(" min");
+
+        // Apply DPI-aware font size to spinbox
+        int controlFontSize = qMax(9, qRound(10 * scaleFactor));
+        mIntervalSpinBox->setStyleSheet(QString("font-size: %1px;").arg(controlFontSize));
+
         connect(mIntervalSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
                 this, &TestWindow::onSettingsChanged);
-        settingsLayout->addRow("Update Interval:", mIntervalSpinBox);
+        settingsLayout->addRow(intervalLabel, mIntervalSpinBox);
 
         mUnitComboBox = new QComboBox();
         mUnitComboBox->addItem("Celsius (°C)", "celsius");
         mUnitComboBox->addItem("Fahrenheit (°F)", "fahrenheit");
+        mUnitComboBox->setStyleSheet(QString("font-size: %1px;").arg(controlFontSize));
+
         connect(mUnitComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
                 this, &TestWindow::onSettingsChanged);
-        settingsLayout->addRow("Temperature Unit:", mUnitComboBox);
+        settingsLayout->addRow(unitLabel, mUnitComboBox);
 
         mShowDescCheckBox = new QCheckBox();
         mShowDescCheckBox->setChecked(true);
+        mShowDescCheckBox->setStyleSheet(QString("font-size: %1px;").arg(controlFontSize));
+
         connect(mShowDescCheckBox, &QCheckBox::toggled,
                 this, &TestWindow::onSettingsChanged);
-        settingsLayout->addRow("Show Description:", mShowDescCheckBox);
+        settingsLayout->addRow(descLabel, mShowDescCheckBox);
 
         mainLayout->addWidget(settingsGroup);
 
@@ -128,11 +193,19 @@ private:
             "Weather data provided by Open-Meteo.com (free, no API key required)\n"
             "Location determined by IP geolocation service"
         );
-        infoLabel->setStyleSheet("color: #666; font-size: 11px;");
+
+        // Apply DPI-aware font size to info label
+        int infoFontSize = qMax(9, qRound(11 * scaleFactor));
+        infoLabel->setStyleSheet(QString("color: #666; font-size: %1px;").arg(infoFontSize));
         infoLabel->setWordWrap(true);
         mainLayout->addWidget(infoLabel);
 
         mainLayout->addStretch();
+
+        // Debug: Print font sizes for all UI elements
+        qDebug() << "Settings window DPI-aware fonts: group title=" << groupTitleFontSize
+                 << "px, labels=" << labelFontSize << "px, controls=" << controlFontSize
+                 << "px, button=" << buttonFontSize << "px, info=" << infoFontSize << "px";
     }
 
 private:

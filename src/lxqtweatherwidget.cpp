@@ -64,6 +64,14 @@ void LXQtWeatherWidget::updateSettings(IWeatherSettings *settings)
     // Update description display
     if (mDescriptionLabel) {
         mDescriptionLabel->setVisible(mShowDescription);
+
+        // Update font sizes based on current DPI
+        double scaleFactor = getScaleFactor();
+        int tempFontSize = qMax(10, qRound(12 * scaleFactor));
+        int descFontSize = qMax(8, qRound(9 * scaleFactor));
+
+        mTemperatureLabel->setStyleSheet(QString("font-weight: bold; font-size: %1px;").arg(tempFontSize));
+        mDescriptionLabel->setStyleSheet(QString("font-size: %1px; color: #666;").arg(descFontSize));
     }
 
     // Update temperature display if data is available
@@ -110,6 +118,14 @@ void LXQtWeatherWidget::mousePressEvent(QMouseEvent *event)
         openYandexWeatherMap();
     }
     QWidget::mousePressEvent(event);
+}
+
+QSize LXQtWeatherWidget::sizeHint() const
+{
+    double scaleFactor = getScaleFactor();
+    int width = qRound(120 * scaleFactor);  // Базовая ширина
+    int height = qRound(32 * scaleFactor);  // Базовая высота
+    return QSize(width, height);
 }
 
 void LXQtWeatherWidget::onWeatherDataReceived(const QJsonObject &data)
@@ -220,14 +236,22 @@ void LXQtWeatherWidget::openYandexWeatherMap()
 
 void LXQtWeatherWidget::setupUI()
 {
+    // Calculate DPI-aware sizes
+    double scaleFactor = getScaleFactor();
+
+    int iconSize = qRound(24 * scaleFactor);
+    int widgetHeight = qRound(32 * scaleFactor);
+    int margin = qMax(2, qRound(4 * scaleFactor));
+    int spacing = qMax(2, qRound(4 * scaleFactor));
+
     // Create main layout
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
-    mainLayout->setContentsMargins(4, 2, 4, 2);
-    mainLayout->setSpacing(4);
+    mainLayout->setContentsMargins(margin, qRound(2 * scaleFactor), margin, qRound(2 * scaleFactor));
+    mainLayout->setSpacing(spacing);
 
     // Weather icon
     mIconLabel = new QLabel();
-    mIconLabel->setFixedSize(24, 24);
+    mIconLabel->setFixedSize(iconSize, iconSize);
     mIconLabel->setAlignment(Qt::AlignCenter);
     mIconLabel->setPixmap(loadWeatherIcon("02d")); // Default icon
     mainLayout->addWidget(mIconLabel);
@@ -237,23 +261,30 @@ void LXQtWeatherWidget::setupUI()
     textLayout->setContentsMargins(0, 0, 0, 0);
     textLayout->setSpacing(0);
 
+    // Calculate DPI-aware font sizes
+    int tempFontSize = qMax(10, qRound(12 * scaleFactor));
+    int descFontSize = qMax(8, qRound(9 * scaleFactor));
+
+    qDebug() << "DPI-aware sizes: icon=" << iconSize << "px, height=" << widgetHeight
+             << "px, temp font=" << tempFontSize << "px, desc font=" << descFontSize << "px";
+
     // Temperature
     mTemperatureLabel = new QLabel("--°");
     mTemperatureLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    mTemperatureLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    mTemperatureLabel->setStyleSheet(QString("font-weight: bold; font-size: %1px;").arg(tempFontSize));
     textLayout->addWidget(mTemperatureLabel);
 
     // Weather description
     mDescriptionLabel = new QLabel("");
     mDescriptionLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    mDescriptionLabel->setStyleSheet("font-size: 9px; color: #666;");
+    mDescriptionLabel->setStyleSheet(QString("font-size: %1px; color: #666;").arg(descFontSize));
     mDescriptionLabel->setVisible(mShowDescription);
     textLayout->addWidget(mDescriptionLabel);
 
     mainLayout->addLayout(textLayout);
 
     setLayout(mainLayout);
-    setFixedHeight(32);
+    setFixedHeight(widgetHeight);
 
     // Set hand cursor to indicate clickability
     setCursor(Qt::PointingHandCursor);
@@ -381,13 +412,18 @@ QString LXQtWeatherWidget::getWeatherDescription(int weatherCode) const
 
 QPixmap LXQtWeatherWidget::loadWeatherIcon(const QString &iconCode) const
 {
+    // Calculate DPI-aware icon size
+    double scaleFactor = getScaleFactor();
+    int iconSize = qRound(24 * scaleFactor);
+    int fontSize = qMax(12, qRound(16 * scaleFactor));
+
     // Create simple Unicode symbols as icons
-    QPixmap pixmap(24, 24);
+    QPixmap pixmap(iconSize, iconSize);
     pixmap.fill(Qt::transparent);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing);
-    painter.setFont(QFont("Arial", 16));
+    painter.setFont(QFont("Arial", fontSize));
     painter.setPen(Qt::black);
 
     QString iconSymbol;

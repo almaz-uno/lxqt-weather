@@ -40,6 +40,7 @@ public:
     ~LXQtWeatherWidget();
 
     void updateSettings(IWeatherSettings *settings);
+    QSize sizeHint() const override;
 
 public slots:
     void refreshWeather();
@@ -65,6 +66,7 @@ private:
     QString formatTemperature(double temperature) const;
     QString getWeatherDescription(int weatherCode) const;
     QPixmap loadWeatherIcon(const QString &iconCode) const;
+    double getScaleFactor() const { return logicalDpiX() / 96.0; }
 
 private:
     // Services
