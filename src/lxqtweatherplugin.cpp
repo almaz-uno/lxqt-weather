@@ -1,5 +1,6 @@
 #include "lxqtweatherplugin.h"
 #include "lxqtweatherwidget.h"
+#include "version.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -154,7 +155,9 @@ QDialog* LXQtWeatherPlugin::configureDialog()
         "Weather data provided by Open-Meteo.com\n"
         "Open-Meteo is a free weather API that doesn't require registration.\n"
         "Location is determined automatically using your IP address.\n"
-        "Location updates automatically when network changes (VPN, etc.)."
+        "Location updates automatically when network changes (VPN, etc.).\n"
+        "\n"
+        "lxqt-weather " LXQT_WEATHER_VERSION
     );
     infoLabel->setWordWrap(true);
 

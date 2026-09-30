@@ -11,8 +11,10 @@
 #include <QGroupBox>
 #include <QFormLayout>
 #include <QDebug>
+#include <cstdio>
 
 #include "lxqtweatherwidget.h"
+#include "version.h"
 
     // Simple settings simulation for testing
 class MockPluginSettings : public QObject, public IWeatherSettings
@@ -219,11 +221,18 @@ private:
 
 int main(int argc, char *argv[])
 {
+    // Before QApplication, so that it needs no display: the release script
+    // checks the version of the build (specs/001-releases)
+    if (argc == 2 && qstrcmp(argv[1], "--version") == 0) {
+        std::printf("lxqt-weather %s\n", LXQT_WEATHER_VERSION);
+        return 0;
+    }
+
     QApplication app(argc, argv);
 
     // Set application information
     app.setApplicationName("LXQt Weather Widget Test");
-    app.setApplicationVersion("1.0");
+    app.setApplicationVersion(LXQT_WEATHER_VERSION);
     app.setOrganizationName("LXQt");
 
     TestWindow window;

@@ -1,4 +1,5 @@
 #include "geolocation.h"
+#include "version.h"
 #include <QJsonParseError>
 
 const QString GeoLocation::IP_GEOLOCATION_URL = "http://ip-api.com/json/";
@@ -28,7 +29,7 @@ void GeoLocation::requestLocation()
     }
 
     QNetworkRequest request(IP_GEOLOCATION_URL);
-    request.setHeader(QNetworkRequest::UserAgentHeader, "LXQt-Weather-Plugin/1.0");
+    request.setHeader(QNetworkRequest::UserAgentHeader, "lxqt-weather/" LXQT_WEATHER_VERSION);
 
     // Set timeout
     request.setTransferTimeout(10000); // 10 seconds

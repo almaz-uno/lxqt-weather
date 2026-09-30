@@ -1,0 +1,44 @@
+# Checks on every push of a branch and every pull request (specs/001-releases);
+# the release runs this workflow too, on the code of the tag.
+name: test
+
+on:
+  push:
+    branches: ["**"] # a tag is checked by the release
+  pull_request:
+  workflow_call:
+    inputs:
+      ref:
+        description: "What to check: a branch, a tag or a commit"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # Debian 12, the reference environment and that of release builds
+    container: debian:bookworm
+    steps:
+      # git before checkout, so that it clones rather than downloads an archive
+      - name: packages
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends ca-certificates git
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+      # The steps run as root of the container, the checkout belongs to the
+      # runner's user: without this git describe fails, and the build gets
+      # "dev" as its version
+      - name: safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: build dependencies
+        run: scripts/debian-deps.sh
+      - name: configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+      - name: build
+        run: cmake --build build --parallel "$(nproc)"
+      - name: test
+        run: ctest --test-dir build --output-on-failure
