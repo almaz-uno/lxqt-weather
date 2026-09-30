@@ -1,0 +1,119 @@
+= Specifications
+:toc: left
+:toc-title: Contents
+:toclevels: 2
+:sectnums:
+:revdate: 2026-09-30
+
+Spec-driven development: a change that will outlive a single sitting gets a
+written specification before any code is written. The point is not ceremony:
+the decisions, and the measurements they rest on, stop living in chat history
+and start living next to the code they constrain.
+
+The rules a specification does not override are collected in the
+<<constitution.adoc#,project constitution>>. The specification decides what a
+change does; the constitution constrains how it may be done.
+
+== Layout
+
+----
+specs/
+  README.adoc              this file
+  constitution.adoc        rules that apply to every change
+  NNN-short-slug/
+    spec.adoc              what and why, plus acceptance criteria
+    research.adoc          measurements and findings the spec rests on
+    plan.adoc              technical approach: files, order, what is reused
+    tasks.adoc             ordered steps, each verifiable on its own
+----
+
+Directories are numbered in the order work starts. The slug names the change,
+not its implementation: `001-hourly-forecast`, not `001-add-hourly-request`.
+
+Supporting material for a change — measurement scripts, recorded responses of
+the weather and geolocation services, reference screenshots — lives in the
+same directory next to the documents when its size and content allow keeping
+it in the repository; otherwise the specification says where it is and how to
+reproduce it.
+
+== Which documents a change needs
+
+Not all four every time.
+
+`spec.adoc`:: Always. Without acceptance criteria there is nothing to check,
+and "looks right" is not a criterion.
+
+`research.adoc`:: When the plan rests on facts that had to be established: a
+measurement, the behavior of Qt, of the LXQt panel or of a web service
+(Open-Meteo, ip-api.com), a response format. The numbers are recorded together
+with how they were obtained, so that the next reader does not repeat the work
+or rely on a stale memory of it.
+
+`plan.adoc`:: When the change touches more than one file or must preserve
+something that already exists.
+
+`tasks.adoc`:: When the order of work matters for verification — for example,
+when a "before" measurement must be taken before anything changes.
+
+A one-line bug fix needs none of them.
+
+== Relation to issues
+
+A specification and an issue answer different questions and do not replace
+each other. The specification says what is being done and why, and carries the
+acceptance criteria; the issue tracks where the work is right now and anchors
+the branch and the pull request.
+
+Issues live in GitHub, `almaz-uno/lxqt-weather`. The order:
+
+. The issue comes first: a title, two or three lines of substance and a link
+  to the specification. Acceptance criteria are not copied into the issue —
+  they are linked. The tracker is not versioned together with the code, and a
+  diverged copy of the criteria misleads whoever reads the change half a year
+  later.
++
+The link is an absolute link to the file on `develop`:
+`[specs/NNN-slug/spec.adoc](https://github.com/almaz-uno/lxqt-weather/blob/develop/specs/NNN-slug/spec.adoc)`.
+It resolves once the branch is merged; until then the specification is read in
+the pull request.
+. Then the branch `issue/lxqt-weather#NN-slug` is created, where the slug
+  matches the slug of the specification directory. The issue comes first
+  precisely for this reason: without its number the branch cannot be named
+  correctly, and renaming it later is an extra step. The link is then visible
+  from both sides: from the branch — which specification; from the directory —
+  which issue.
+. The `:issue:` attribute with the issue number is added to the header of
+  `spec.adoc`, so that the link is two-way and survives a branch rename.
+. The specification is the first commit of the branch, `📝 docs:`, before any
+  code. It reaches the repository before what it describes, and the pull
+  request shows that the code came after the decision, not the other way
+  round. If the work is large and the specification has to be approved before
+  implementation starts, it goes out as a separate pull request from the same
+  branch, and the code continues after it is merged.
+
+The `tasks.adoc` checklist is not duplicated in the issue. The list of steps
+lives either in the specification or in the issue, never in both: two copies
+diverge by the third step.
+
+== Rules
+
+* English, per `AGENTS.md`.
+* An acceptance criterion says what is checked and how: a number with its
+  measurement method, a named test, or a reproducible manual scenario with an
+  observable result. An adjective is not a criterion.
+* A change in behavior the user can see is described before it is implemented;
+  the documentation describing that behavior is updated in the same change set.
+* Since the project has working code, a specification describes a _delta_ to
+  it. It names what stays unchanged rather than restating all requirements —
+  otherwise unmentioned behavior starts to look revoked.
+* The meaning of existing data is not changed retroactively. If a change alters
+  the shape of what users already have — the plugin's keys in the LXQt panel
+  configuration, installed file names and paths — the specification says what
+  happens to existing installations.
+* Open decisions are listed as open.
+* A specification is updated together with the code, in the same change set. A
+  specification that has diverged from the implementation misleads more than
+  its absence would.
+* The header of every document carries `:revdate:`, and `spec.adoc` also
+  carries `:status:`, which shows whether the change is implemented, whether it
+  has been measured, and what remains open.

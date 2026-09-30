@@ -1,0 +1,244 @@
+= lxqt-weather project constitution
+:toc: left
+:toc-title: Contents
+:toclevels: 2
+:sectnums:
+:revdate: 2026-09-30
+
+The set of rules a specification does not override. The specification decides
+_what_ a change does; the constitution constrains _how_ it may be done, and it
+applies equally to a human and to an agent.
+
+== Document status
+
+The constitution describes what the project actually follows, not what it
+would like to follow. Every rule is backed by a place in the repository —
+`AGENTS.md`, the source layout, `CMakeLists.txt`, `install.sh`, the documents —
+and can be checked rather than taken on trust.
+
+lxqt-weather adopted spec-driven development with working code already in
+place: the constitution was written against `develop` at `52446c5`
+(2025-08-04). Behavior implemented before that point is described by the code
+and by `README.md` — with the divergences listed at the end of this document —
+not by specifications, and is not re-specified retroactively; the first
+specification describes a delta to that state. Open questions are listed as
+open at the end of the document.
+
+Amending the constitution is a separate change with its own specification: a
+rule is either rewritten or withdrawn, and the specification says on what
+grounds. Silently diverging from the constitution is not allowed: if the code
+contradicts it, the error is either in the code or in this document, and both
+cases need an explicit decision, not an omission.
+
+== Language
+
+The project language is English (`AGENTS.md`): documentation, comments,
+commit messages, specifications, user interface texts, log messages.
+Identifiers, file names, configuration keys and external terms keep their
+original spelling. Translations of user-facing strings — `Name[ru]` and
+`Comment[ru]` in `data/weather.desktop` — are localization, not a departure
+from the project language.
+
+== Documentation is part of the change, not its consequence
+
+A document describing the behavior of the widget is updated in the same change
+set that changes that behavior. A description that lags behind the code is
+worse than a missing one: decisions are made from it. A document that no
+longer matches the code is updated or deleted in the same change.
+
+`specs/` holds the rationale and acceptance criteria of individual changes.
+Documentation describing behavior:
+
+* `README.md` — features, data sources, build, installation, usage, settings,
+  troubleshooting, architecture;
+* `data/weather.desktop` — the name and description the panel shows in its
+  "Add Widgets" dialog;
+* the usage help of `install.sh`;
+* texts shown in the widget itself: the tooltip
+  (`LXQtWeatherWidget::updateTooltip`) names the mouse actions, and the
+  "Information" group of the settings dialog
+  (`LXQtWeatherPlugin::configureDialog`) names the data sources. They change
+  together with the behavior they describe.
+
+== Stack and layout
+
+* C++17, Qt 5 (Core, Widgets, Network), the LXQt panel plugin API found
+  through the pkg-config module `lxqt`. The plugin implements
+  `ILXQtPanelPluginLibrary` with the interface ID
+  `lxqt.org/Panel/PluginInterface/3.0`.
+* Reference environment — the one the widget is built and run in: Debian 12,
+  `lxqt-panel` 1.2.1, `liblxqt1-dev` 1.2.0, Qt 5.15.8, GCC 12.2, CMake 3.25.
+  `CMakeLists.txt` requires CMake 3.16 or newer; `README.md` requires GCC 12
+  or newer.
+* Two CMake targets. `weather` is the panel plugin `libweather.so`.
+  `weather-test` (`src/main.cpp`) is a standalone window with the same widget
+  and a settings mock, for checking the widget without the panel; it does not
+  link LXQt.
+* Sources, one pair of files per responsibility:
+** `src/lxqtweatherplugin.{h,cpp}` — the panel interface, the settings
+   dialog, `PluginSettingsAdapter`;
+** `src/lxqtweatherwidget.{h,cpp}` — the widget: display, tooltip, mouse
+   actions, the update timer, the reaction to network changes, the fallback
+   location;
+** `src/weatherapi.{h,cpp}` — the Open-Meteo client, retries, the mapping of
+   WMO weather codes to descriptions and icon codes;
+** `src/geolocation.{h,cpp}` — location by IP address;
+** `data/weather.desktop` — the plugin description for the panel.
+* LXQt headers are included only by `src/lxqtweatherplugin.h`. The widget
+  receives its settings through the `IWeatherSettings` interface
+  (`src/lxqtweatherwidget.h`), implemented by `PluginSettingsAdapter` in the
+  plugin and by `MockPluginSettings` in `weather-test`. This boundary is what
+  lets `weather-test` build and run without the panel; a change that needs
+  LXQt beyond the plugin files says so in its specification.
+* Weather icons are Unicode glyphs drawn into a pixmap
+  (`LXQtWeatherWidget::loadWeatherIcon`); the project has no image resources.
+* Logging — `qDebug()` and `qWarning()`; the plugin's messages go to the
+  output of `lxqt-panel`.
+* Build — `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release` and
+  `cmake --build build`; `build/` is ignored by git. At the time of writing
+  the build produces no warnings other than `-Wdeprecated-declarations` for
+  `QNetworkConfigurationManager`, and a change does not add new ones.
+* Installation — `./install.sh` (commands `check`, `build`, `install`,
+  `restart`, `all`): it installs missing packages, rebuilds `build/` from
+  scratch with the prefix `/usr`, runs `sudo make install` and restarts
+  `lxqt-panel`. The destinations are fixed in `CMakeLists.txt`: the plugin to
+  `/usr/lib/x86_64-linux-gnu/lxqt-panel`, the desktop file to
+  `/usr/share/lxqt/lxqt-panel`, `weather-test` to `bin` under the install
+  prefix. The panel loads the plugin at startup, so a new build takes effect
+  only after the panel restarts.
+
+== Settings and user data
+
+* The widget keeps no state of its own on disk. The location, the city and the
+  last weather live in memory only and are fetched again after every panel
+  start.
+* The only persistent data is the plugin's settings, which the panel stores in
+  its configuration `~/.config/lxqt/panel.conf`, in the section of the plugin
+  instance (`[weather]` for the first one), through LXQt `PluginSettings`:
+** `update_interval` — minutes between refreshes of location and weather,
+   5 to 120 in the dialog, default 30;
+** `temperature_unit` — `celsius` or `fahrenheit`, default `celsius`;
+** `show_description` — whether the weather description is shown under the
+   temperature, default `true`.
+* The plugin constructor writes a missing key with its default. The defaults
+  are repeated in four places — the `LXQtWeatherPlugin` constructor,
+  `LXQtWeatherPlugin::configureDialog`, `LXQtWeatherWidget` (member
+  initializers and `updateSettings`) and `MockPluginSettings` in
+  `src/main.cpp` — and a default is changed in all of them, and in
+  `README.md`, in the same change set.
+* Panel configurations belong to users and outlive plugin versions. A missing
+  key silently falls back to its default, so a renamed key loses the user's
+  value without an error. The panel refers to the plugin as `type=weather`,
+  which it resolves to `weather.desktop` and `libweather.so`; renaming either
+  removes the widget from existing panels. A change that renames, removes or
+  reinterprets a key, or renames an installed file, therefore says in its
+  specification what happens to existing installations — the old name is
+  still read, migrated, or knowingly dropped.
+
+== External services
+
+The widget depends on services it does not control, and which service it
+talks to, and what it sends, is behavior the user can see:
+
+* location — `http://ip-api.com/json/`, by the public IP address of the
+  request; when it fails, the widget falls back to Moscow (55.7558, 37.6176),
+  hard-coded in `LXQtWeatherWidget::setupServices`;
+* weather — `http://api.open-meteo.com/v1/forecast`, the `current_weather`
+  block, by coordinates;
+* the weather map — `https://yandex.ru/pogoda/maps/nowcast?lat=…&lon=…`,
+  opened in the default browser on a middle click.
+
+None of them needs registration or a key. A change of a service, an endpoint,
+or of what is sent to it goes through a specification and updates
+`README.md`, the tooltip and the "Information" group of the settings dialog in
+the same change set.
+
+== Verifiability
+
+The project has no automated tests and no CI at the time of writing (see the
+open questions). A change is verified by:
+
+* the build of both targets, with no new warnings (section "Stack and
+  layout");
+* a manual scenario written in the specification for behavior that can only
+  be observed on screen or over the network — panel rendering, the tooltip,
+  mouse actions, the settings dialog, scaling, reaction to network changes.
+  The scenario names the environment (`lxqt-panel` and Qt versions, screen
+  DPI and scaling, panel position and height), the steps and the expected
+  observable result. It uses `weather-test` when the panel itself is not
+  needed, and installs the plugin and restarts the panel when it is. A
+  scenario that depends on the state of the network says how that state is
+  produced rather than waiting for it to happen.
+
+== Decisions rest on measurements
+
+An acceptance criterion says what is checked and how: a number with its
+measurement method, a named test, or a reproducible manual scenario with an
+observable result. "Works better", "more reliable", "looks right" are not
+criteria and do not enter a specification in that form.
+
+The numbers a decision rests on are reproducible: the specification says on
+what data and how they were obtained, so that the next reader can repeat or
+refute them instead of trusting a retelling. For the widget this means the
+conditions the figures depend on: LXQt and Qt versions, screen DPI and
+scaling, panel height, network conditions, and the responses of the external
+services at the time of measurement.
+
+A decision not yet made is recorded as open. A specification that hides an
+unresolved choice behind a plausible default is worse than one that admits it.
+
+== Secrets
+
+There are no secrets in the repository, and the widget needs none: Open-Meteo
+and ip-api.com are used without keys. Should a change introduce one, the local
+value stays outside git, and the repository holds only an example with empty
+values.
+
+== Working with history
+
+The agent does not run `git commit`, `push`, create tags or branches for a
+commit without the author's explicit agreement — even when the task looks
+finished. Model co-authorship (`Co-Authored-By`, "Generated with…") is not
+added to commit messages or pull request descriptions. Tags, their push and
+releases happen only with the author's consent.
+
+Commit messages: the first commits of the history are plain imperative
+summaries, the latest ones start with a gitmoji. From the adoption of this
+constitution on, a message is a gitmoji, then a Conventional Commits type and
+a summary — `✨ feat:`, `🐛 fix:`, `📝 docs:`, `♻️ refactor:`, `🔧 chore:`.
+Work happens on `issue/lxqt-weather#NN-slug` branches off `develop` and lands
+through a GitHub pull request into `develop`.
+
+== What the constitution does not regulate
+
+Open questions, recorded as open. Each is closed by a separate change with a
+specification, after which the corresponding section appears above.
+
+* *Versions and releases* — there are no tags and no GitHub releases.
+  `project(lxqt-weather VERSION 1.0.0)` in `CMakeLists.txt` is not used by the
+  code, the User-Agent headers say `1.0`, and the "Changelog" of `README.md`
+  lists v1.0.0 and v1.1.0 dated 2025-01-15, before the first commit
+  (2025-07-24).
+* *Automated tests and CI* — none yet. Whatever framework is chosen, tests
+  will run without the network: the external services are replaced by
+  recorded responses committed next to the tests.
+* *`README.md` diverges from the code* — it describes `src/resources.qrc` and
+  SVG icons in `data/icons/`, neither of which exists; it promises humidity and
+  pressure in the tooltip, which never appear (the `current_weather` block of
+  Open-Meteo has neither, and `WeatherAPI` sets them to zero); it does not
+  mention the middle click. Fixed by a documentation change.
+* *Non-English comments* — two comments in `LXQtWeatherWidget::sizeHint` are in
+  Russian, contrary to section "Language".
+* *Location data* — the widget sends the user's public IP address to
+  ip-api.com and the coordinates to Open-Meteo, both over plain HTTP (the free
+  ip-api.com endpoint has no HTTPS), and logs the coordinates, the city and
+  the request URL. There is no rule yet on the transport or on logging the
+  location.
+* *Target platforms* — the install destination of the plugin is the Debian
+  multiarch path for amd64, while `install.sh` and `README.md` also offer
+  pacman and dnf, whose distributions keep panel plugins elsewhere. The code
+  targets LXQt 1.x on Qt 5: LXQt 2 is built on Qt 6, which has no
+  `QNetworkConfigurationManager`, the class the widget uses to notice network
+  changes.
+* *SDD framework* (OpenSpec, GSD, Spec Kit or a layout of our own) — until one
+  is chosen, the layout from `specs/README.adoc` applies.
