@@ -3,7 +3,7 @@
 :toc-title: Contents
 :sectnums:
 :revdate: 2026-10-01
-:status: implemented; K1 and K4 met, K2, K3 and K5 met locally (section "Results"); the rest after the push and the tag v0.1.0, which the author sets once the pull request is merged
+:status: implemented; K1, K3, K4 and K5 met, K2 in part (section "Results"); the rest of K2 and K6 after the tag v0.1.0, which the author sets once the pull request is merged
 :issue: 1
 
 == What and why
@@ -205,8 +205,11 @@ author may overturn any of them.
   `git describe --tags --always --dirty`; a second `cmake --build` compiles
   and links nothing. `strace` of `weather-test` (`QT_QPA_PLATFORM=offscreen`):
   `GET /json/` and `GET /v1/forecast…`, both with
-  `User-Agent: lxqt-weather/d9515ac-dirty`. After a commit — with the
-  commits of the branch; the settings dialog — with K6.
+  `User-Agent: lxqt-weather/d9515ac-dirty`. After the commit `5fe4d1c`,
+  `cmake --build` without reconfiguring recompiled the six objects that
+  include the header, and `weather-test --version` gave `lxqt-weather
+  5fe4d1c`, equal to `git describe`; the next build compiled nothing. The
+  settings dialog — with K6.
 | K4 | `lxqt-weather_0.1.0_amd64.deb`: `/usr/bin/weather-test`,
   `/usr/lib/x86_64-linux-gnu/lxqt-panel/libweather.so`,
   `/usr/share/lxqt/lxqt-panel/weather.desktop`; `Package: lxqt-weather`,
@@ -223,7 +226,9 @@ author may overturn any of them.
   `scripts/debian-deps.sh`; then configure, build (the same warnings, 3 s),
   `ctest` and `cpack` passed, with the files and `Depends` of K4.
   `actionlint` 1.7.12 — no errors in either workflow; `shellcheck` — none
-  in the scripts. GitHub — with the push.
+  in the scripts. GitHub: workflow `test` passed for the push of the branch
+  (run 36778741574) and for pull request #2 (run 36778741534), about 70 s
+  each; Qt 5.15.8, LXQt 1.2.0, the same ten warnings, `ctest` passed.
 |===
 
 == Outside the specification
