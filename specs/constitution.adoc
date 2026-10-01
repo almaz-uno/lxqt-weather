@@ -3,7 +3,7 @@
 :toc-title: Contents
 :toclevels: 2
 :sectnums:
-:revdate: 2026-09-30
+:revdate: 2026-10-01
 
 The set of rules a specification does not override. The specification decides
 _what_ a change does; the constitution constrains _how_ it may be done, and it
@@ -49,8 +49,10 @@ longer matches the code is updated or deleted in the same change.
 `specs/` holds the rationale and acceptance criteria of individual changes.
 Documentation describing behavior:
 
-* `README.md` — features, data sources, build, installation, usage, settings,
-  troubleshooting, architecture;
+* `README.md` — features, data sources, installation from a release, build,
+  installation, usage, settings, troubleshooting, architecture;
+* `RELEASE-NOTES.adoc` — what each version changed (section "Releases and
+  versions");
 * `data/weather.desktop` — the name and description the panel shows in its
   "Add Widgets" dialog;
 * the usage help of `install.sh`;
@@ -62,15 +64,18 @@ Documentation describing behavior:
 
 == Stack and layout
 
-* C++17, Qt 5 (Core, Widgets, Network), the LXQt panel plugin API found
-  through the pkg-config module `lxqt`. The plugin implements
-  `ILXQtPanelPluginLibrary` with the interface ID
-  `lxqt.org/Panel/PluginInterface/3.0`.
+* C++17, Qt 5 (Core, Widgets, Network; Test for the tests), the LXQt panel
+  plugin API found through the pkg-config module `lxqt`. The plugin
+  implements `ILXQtPanelPluginLibrary` with the interface ID
+  `lxqt.org/Panel/PluginInterface/3.0`. It links no LXQt library: the
+  `PluginSettings` symbols it uses are resolved from the `lxqt-panel`
+  executable that loads it.
 * Reference environment — the one the widget is built and run in: Debian 12,
   `lxqt-panel` 1.2.1, `liblxqt1-dev` 1.2.0, Qt 5.15.8, GCC 12.2, CMake 3.25.
   `CMakeLists.txt` requires CMake 3.16 or newer; `README.md` requires GCC 12
   or newer.
-* Two CMake targets. `weather` is the panel plugin `libweather.so`.
+* The product is two CMake targets. `weather` is the panel plugin
+  `libweather.so`.
   `weather-test` (`src/main.cpp`) is a standalone window with the same widget
   and a settings mock, for checking the widget without the panel; it does not
   link LXQt.
@@ -84,6 +89,15 @@ Documentation describing behavior:
    WMO weather codes to descriptions and icon codes;
 ** `src/geolocation.{h,cpp}` — location by IP address;
 ** `data/weather.desktop` — the plugin description for the panel.
+* Outside the widget, neither built into the plugin nor installed:
+** `cmake/version.cmake` — the version of a build, written by target
+   `version` into `<build>/generated/version.h` as `LXQT_WEATHER_VERSION`;
+** `tools/relnotes` — the text of a release from `RELEASE-NOTES.adoc`;
+** `tests/` — Qt Test programs;
+** `scripts/release.sh` — the release; `scripts/debian-deps.sh` — the
+   packages of the build environment;
+** `.github/workflows/` — CI and releases (section "Releases and
+   versions").
 * LXQt headers are included only by `src/lxqtweatherplugin.h`. The widget
   receives its settings through the `IWeatherSettings` interface
   (`src/lxqtweatherwidget.h`), implemented by `PluginSettingsAdapter` in the
@@ -95,9 +109,10 @@ Documentation describing behavior:
 * Logging — `qDebug()` and `qWarning()`; the plugin's messages go to the
   output of `lxqt-panel`.
 * Build — `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release` and
-  `cmake --build build`; `build/` is ignored by git. At the time of writing
-  the build produces no warnings other than `-Wdeprecated-declarations` for
-  `QNetworkConfigurationManager`, and a change does not add new ones.
+  `cmake --build build`; tests — `ctest --test-dir build`; `build/` is
+  ignored by git. At the time of writing the build produces no warnings other
+  than `-Wdeprecated-declarations` for `QNetworkConfigurationManager`, and a
+  change does not add new ones.
 * Installation — `./install.sh` (commands `check`, `build`, `install`,
   `restart`, `all`): it installs missing packages, rebuilds `build/` from
   scratch with the prefix `/usr`, runs `sudo make install` and restarts
@@ -148,18 +163,28 @@ talks to, and what it sends, is behavior the user can see:
 * the weather map — `https://yandex.ru/pogoda/maps/nowcast?lat=…&lon=…`,
   opened in the default browser on a middle click.
 
-None of them needs registration or a key. A change of a service, an endpoint,
-or of what is sent to it goes through a specification and updates
-`README.md`, the tooltip and the "Information" group of the settings dialog in
-the same change set.
+None of them needs registration or a key. Both requests send the User-Agent
+`lxqt-weather/<version>` (specification `001-releases`). A change of a
+service, an endpoint, or of what is sent to it goes through a specification
+and updates `README.md`, the tooltip and the "Information" group of the
+settings dialog in the same change set.
 
 == Verifiability
 
-The project has no automated tests and no CI at the time of writing (see the
-open questions). A change is verified by:
+Tests are updated together with the implementation — in the same change, not
+"later". Tests are Qt Test programs in `tests/`, registered with CTest; they
+need neither a display nor the network, and an external service a test
+depends on is replaced by a recorded response committed next to the test. The
+build and `ctest` pass locally before a change is proposed for commit, and
+run in GitHub Actions — workflow `test`, in a `debian:bookworm` container
+with the packages of `scripts/debian-deps.sh` — on every push of a branch and
+every pull request; the same workflow gates the release (specification
+`001-releases`). At the time of writing the only test is `relnotes_test`.
 
-* the build of both targets, with no new warnings (section "Stack and
-  layout");
+A change is verified by:
+
+* the build of all targets, with no new warnings (section "Stack and
+  layout"), and the tests;
 * a manual scenario written in the specification for behavior that can only
   be observed on screen or over the network — panel rendering, the tooltip,
   mouse actions, the settings dialog, scaling, reaction to network changes.
@@ -209,19 +234,38 @@ a summary — `✨ feat:`, `🐛 fix:`, `📝 docs:`, `♻️ refactor:`, `🔧 
 Work happens on `issue/lxqt-weather#NN-slug` branches off `develop` and lands
 through a GitHub pull request into `develop`.
 
+== Releases and versions
+
+The section is introduced by specification `001-releases`.
+
+* A version is an annotated tag `vX.Y.Z` on `develop`. Every build takes it
+  from `git describe --tags --always --dirty` (`cmake/version.cmake`); it is
+  printed by `weather-test --version`, shown at the bottom of the settings
+  dialog and sent as the User-Agent. The tag is the only source of the
+  version: `CMakeLists.txt` and the code carry none of their own.
+* The minor version for new behavior, a new settings key or a changed
+  default; the patch for fixes without new behavior.
+* `RELEASE-NOTES.adoc`: a minor release is a chapter, its patches are
+  subsections, the newest come first.
+* Every version tag gets a GitHub release, built by GitHub Actions
+  (`.github/workflows/release.yml`) when the tag is pushed: the checks on the
+  tag, then `scripts/release.sh vX.Y.Z`. A pushed tag without a release is
+  released by `gh workflow run release -f tag=vX.Y.Z`; the script on the
+  author's machine is the same procedure. The package is built from the tag
+  in a temporary `git worktree`, in Debian 12, for amd64; the text is the
+  section of the notes at the tag.
+* A release carries `lxqt-weather_X.Y.Z_amd64.deb` — the plugin, its desktop
+  file and `weather-test`, with `Depends` on Qt 5 and `lxqt-panel` — and
+  `SHA256SUMS`.
+* Tags, their push and releases only with the author's consent (section
+  "Working with history"): the script neither creates nor pushes a tag, and
+  pushing a tag is the consent to release it.
+
 == What the constitution does not regulate
 
 Open questions, recorded as open. Each is closed by a separate change with a
 specification, after which the corresponding section appears above.
 
-* *Versions and releases* — there are no tags and no GitHub releases.
-  `project(lxqt-weather VERSION 1.0.0)` in `CMakeLists.txt` is not used by the
-  code, the User-Agent headers say `1.0`, and the "Changelog" of `README.md`
-  lists v1.0.0 and v1.1.0 dated 2025-01-15, before the first commit
-  (2025-07-24).
-* *Automated tests and CI* — none yet. Whatever framework is chosen, tests
-  will run without the network: the external services are replaced by
-  recorded responses committed next to the tests.
 * *`README.md` diverges from the code* — it describes `src/resources.qrc` and
   SVG icons in `data/icons/`, neither of which exists; it promises humidity and
   pressure in the tooltip, which never appear (the `current_weather` block of

@@ -1,4 +1,5 @@
 #include "weatherapi.h"
+#include "version.h"
 #include <QNetworkRequest>
 #include <QUrl>
 #include <QUrlQuery>
@@ -51,7 +52,7 @@ void WeatherAPI::requestWeatherByCoordinates(double latitude, double longitude)
     url.setQuery(query);
 
     QNetworkRequest request(url);
-    request.setHeader(QNetworkRequest::UserAgentHeader, "LXQt-Weather-Widget/1.0");
+    request.setHeader(QNetworkRequest::UserAgentHeader, "lxqt-weather/" LXQT_WEATHER_VERSION);
     
     // Set timeout to 10 seconds to avoid long waits
     request.setTransferTimeout(10000);

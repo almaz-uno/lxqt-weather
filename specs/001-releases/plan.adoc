@@ -1,0 +1,82 @@
+= 001 — plan
+:toc: left
+:toc-title: Contents
+:revdate: 2026-10-01
+
+== Files
+
+[cols="2,5"]
+|===
+| File | What changes
+
+| `cmake/version.cmake`
+| New. Run by `cmake -P` on every build: `git describe --tags --always
+  --dirty` in the source directory, `dev` when it fails; writes
+  `#define LXQT_WEATHER_VERSION "<version>"` into the given header only when
+  the text differs.
+
+| `CMakeLists.txt`
+| `project()` without `VERSION`. Target `version` (a custom target, always
+  run) producing `<build>/generated/version.h`; `weather` and `weather-test`
+  depend on it and include `<build>/generated`. Target `relnotes`
+  (`tools/relnotes`, Qt Core). `enable_testing()`, target `relnotes_test`
+  (Qt Test) and `add_test`. CPack DEB: name, summary, maintainer,
+  `dpkg-shlibdeps`, `lxqt-panel` in `Depends`, stripped files, default
+  file name.
+
+| `.gitignore`
+| `*.cmake` is ignored as a CMake artefact; `cmake/*.cmake` is excepted.
+
+| `src/main.cpp`
+| `--version` before `QApplication`; application version from the header.
+
+| `src/lxqtweatherplugin.cpp`
+| The version as the last line of the "Information" group.
+
+| `src/geolocation.cpp`, `src/weatherapi.cpp`
+| User-Agent `lxqt-weather/<version>`.
+
+| `tools/relnotes/relnotes.{h,cpp}`, `tools/relnotes/main.cpp`
+| New. `extract()` — the section of a version; `markdown()` — links,
+  labels, bold; the command `relnotes <file.adoc> <X.Y.Z> <base of links>`.
+  A port of qws's `internal/relnotes`.
+
+| `tests/relnotes_test.cpp`
+| New. K1: the real notes, a fixture of levels, the Markdown translation.
+
+| `RELEASE-NOTES.adoc`
+| New. Chapter 0.1.0.
+
+| `scripts/release.sh`
+| New. As in qws, with the CMake build, the check of `weather-test
+  --version` and of the package version, `cpack -D CPACK_PACKAGE_VERSION`.
+
+| `scripts/debian-deps.sh`
+| New. git, cmake, g++, pkg-config, `qtbase5-dev`, `libqt5x11extras5-dev`
+  (required by `lxqt.pc`, not pulled by `liblxqt1-dev`), `liblxqt1-dev`,
+  `lxqt-panel` (the panel plugin headers come with it in Debian 12),
+  `dpkg-dev` and `file` for `dpkg-shlibdeps`, `gh`.
+
+| `.github/workflows/test.yml`, `.github/workflows/release.yml`
+| New. As in qws: `debian:bookworm` container, safe directory, annotated
+  tags; `test` on push, pull request and call; `release` on a version tag or
+  by hand, after `test` on the tag.
+
+| `README.md`
+| "Install from a release"; "Changelog" → `RELEASE-NOTES.adoc`;
+  `weather-test --version`.
+
+| `specs/constitution.adoc`
+| The sections listed in the specification; two open questions closed.
+|===
+
+== Order
+
+. This specification — the first commit of the branch.
+. Code, notes, scripts, workflows, README, constitution — the second.
+. Before pushing: K1, K3, K4 and K5 on ws1 and in a local `debian:bookworm`
+  container; the workflows checked with `actionlint`, the scripts with
+  `shellcheck`; K2 — usage and a missing tag.
+. Push, pull request; K5 on GitHub.
+. After the merge: the author tags `v0.1.0`; K2 — the tag before its push
+  and after its release; K6.

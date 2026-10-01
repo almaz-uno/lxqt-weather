@@ -1,0 +1,42 @@
+= lxqt-weather — release notes
+:toc: left
+:toc-title: Contents
+:toclevels: 2
+:revdate: 2026-10-01
+
+Every minor release is a chapter, its patches are subsections, the newest
+come first (link:specs/001-releases/spec.adoc[specification 001]). The
+version of a build is printed by `weather-test --version` and shown at the
+bottom of the widget's settings dialog. Release packages are built on
+Debian 12 for amd64 and need its LXQt 1.2 panel and Qt 5.15: `sudo apt install
+./lxqt-weather_X.Y.Z_amd64.deb`, then restart the panel.
+
+== 0.1.0 — 2026-10-01
+
+The first release: a weather widget for the LXQt panel, with the behavior
+the widget had before versions were introduced, and versions and releases.
+
+*The widget*:
+
+* The current temperature, in °C or °F, with a weather glyph and optionally
+  a short description, for the location found by the IP address
+  (ip-api.com); the weather comes from Open-Meteo, and neither needs a key.
+  When the location cannot be found, Moscow is used.
+* Location and weather are refreshed every 5 to 120 minutes (30 by default),
+  when the network configuration changes, and on a left click. A middle click
+  opens the Yandex Weather nowcast map at the current location.
+* The tooltip shows the location, temperature, wind, conditions and the time
+  of the last update.
+* Sizes and fonts follow the screen DPI.
+
+*Versions and releases* (link:specs/001-releases/spec.adoc[specification
+001]):
+
+* The version of a build comes from its git tag. It is shown at the bottom of
+  the "Information" group of the settings dialog, printed by
+  `weather-test --version`, and sent as the User-Agent `lxqt-weather/<version>`
+  to ip-api.com and Open-Meteo.
+* Every version is a GitHub release with a Debian package and its
+  `SHA256SUMS`. The package installs the same three files as `install.sh`
+  and replaces a copy installed by it; the panel keeps the widget and its
+  settings.

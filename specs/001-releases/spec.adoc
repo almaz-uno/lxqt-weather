@@ -1,0 +1,241 @@
+= 001 — versions, releases and CI
+:toc: left
+:toc-title: Contents
+:sectnums:
+:revdate: 2026-10-01
+:status: implemented; K1, K3, K4 and K5 met, K2 in part (section "Results"); the rest of K2 and K6 after the tag v0.1.0, which the author sets once the pull request is merged
+:issue: 1
+
+== What and why
+
+lxqt-weather has no versions and no builds outside the author's working copy.
+There are no tags; `project(lxqt-weather VERSION 1.0.0)` in `CMakeLists.txt`
+is used by nothing, the User-Agent headers say `1.0` and `weather-test` sets
+its application version to `1.0`, and the "Changelog" of `README.md` lists
+v1.0.0 and v1.1.0 dated 2025-01-15, before the first commit (2025-07-24). There
+is no CI and no automated test. Both are open questions of the constitution
+("Versions and releases", "Automated tests and CI"). The author decided that
+versions are released through GitHub and that the first one, to check the
+procedure, is v0.1.0 (2026-10-01). The change closes both questions, and the
+rules become sections of the constitution.
+
+The approach is the one of siphon (its specifications 008, 009 and 012) and of
+qws (its specification 004): an annotated tag, a GitHub release built by
+GitHub Actions from the tag, the text of the release taken from
+`RELEASE-NOTES.adoc`. Three things differ, because lxqt-weather is a C++
+plugin that the LXQt panel loads from system directories:
+
+* the release file is a Debian package rather than a bare binary;
+* the version reaches the code through a generated header rather than
+  linker flags;
+* the tool that extracts the release text is written in C++ with Qt and
+  tested with Qt Test — the project's first automated test.
+
+Unchanged, apart from the version line of the settings dialog and the
+User-Agent: what the widget shows and does, its settings and their keys, the
+installation paths, `install.sh`, the rules on commits, tags and pushes
+(constitution, "Working with history").
+
+== Behavior
+
+. *Version* — an annotated tag `vX.Y.Z` on `develop`. Every build runs
+  `git describe --tags --always --dirty` and writes the result into a
+  generated header; outside a repository the version is `dev`. The header is
+  rewritten only when the version changes, so a build without changes
+  recompiles nothing, and a commit or an edit is reflected by the next build
+  without reconfiguring.
+. *Where the version is seen*:
+.. `weather-test --version` prints `lxqt-weather <version>` and exits,
+   without a display;
+.. the "Information" group of the settings dialog ends with
+   `lxqt-weather <version>`, so it is plain which build the panel has loaded;
+.. `weather-test` reports it as its application version;
+.. both requests — to ip-api.com and to Open-Meteo — send the User-Agent
+   `lxqt-weather/<version>` instead of `LXQt-Weather-Plugin/1.0` and
+   `LXQt-Weather-Widget/1.0`.
++
+`project()` in `CMakeLists.txt` loses its `VERSION`: the tag is the only
+source.
+. *Numbers*: the minor version for new behavior, a new settings key or a
+  changed default; the patch for fixes without new behavior.
+. *`RELEASE-NOTES.adoc`*: a minor release is a chapter, its patches are
+  subsections, the newest come first. The "Changelog" of `README.md` is
+  replaced by a link to it.
+. *A release* is a GitHub release on a version tag: the title
+  "lxqt-weather X.Y.Z", the files `lxqt-weather_X.Y.Z_amd64.deb` and
+  `SHA256SUMS`, and as text the section of the release in
+  `RELEASE-NOTES.adoc` at the tag, in Markdown — for `X.Y.0` the chapter up to
+  its first subsection, for a patch its subsection; `link:path[text]` becomes
+  a link to the file at the tag, `Label::` and `*bold*` become bold.
+. *The package* is built by CPack: the three files `install` puts in place —
+  `/usr/lib/x86_64-linux-gnu/lxqt-panel/libweather.so`,
+  `/usr/share/lxqt/lxqt-panel/weather.desktop`, `/usr/bin/weather-test` —
+  stripped; `Depends` found by `dpkg-shlibdeps` (Qt 5, libstdc++, libc) plus
+  `lxqt-panel`. The plugin links no LXQt library: the only LXQt symbols it
+  uses, those of `PluginSettings`, are resolved from the `lxqt-panel`
+  executable that loads it (`nm -D` of `libweather.so`). It is installed
+  with `sudo apt install ./<file>.deb` and removed with `sudo apt remove
+  lxqt-weather`; the panel picks the plugin up after a restart.
+. *`scripts/release.sh vX.Y.Z`* refuses, before building, a tag that is not
+  annotated, not pushed to `origin`, or already released — pushing a tag and
+  replacing a release are the author's decisions. It builds from a temporary
+  `git worktree` at the tag, checks that `weather-test --version` of the
+  build is the tag and that the package's `Version` is `X.Y.Z`, writes
+  `SHA256SUMS`, and publishes with `gh release create --verify-tag`.
+. *The build environment* of CI and of releases is a `debian:bookworm`
+  container — the reference environment of the constitution; its packages
+  are listed once, in `scripts/debian-deps.sh`.
+. *Tests* are Qt Test programs registered with CTest and run by
+  `ctest --test-dir build`; they need neither a display nor the network.
+  The first one checks the release text (K1).
+. *Workflow `test`* configures, builds and runs the tests on every push of a
+  branch and every pull request.
+. *Workflow `release`* runs on the push of a version tag: `test` on the tag,
+  then `scripts/release.sh`. A pushed tag without a release is released by
+  hand with `gh workflow run release -f tag=vX.Y.Z`.
+. *The first release* is `v0.1.0`, tagged by the author once the pull
+  request of this specification is merged.
+
+== Choices made for the author
+
+Each is the recommended option, taken so that the work could proceed; the
+author may overturn any of them.
+
+. *A Debian package, not bare files.* The plugin lives in system directories
+  that the panel reads; three files copied by hand leave nothing that knows
+  them, while a package installs, upgrades and removes them as a unit and
+  declares what it needs. The cost is a release that fits Debian 12 and its
+  derivatives only — which the fixed installation path already implies
+  (constitution, "Target platforms").
+. *The release text tool in C++ with Qt Test.* The project is C++ and Qt;
+  siphon and qws wrote the same tool in their own language, Go. Qt Test
+  comes with `qtbase5-dev`, which the build needs anyway, so the first test
+  adds no dependency, and it settles the test framework of the project.
+. *A header regenerated on every build* rather than a version computed at
+  configure time: a configure-time version stays behind after a commit until
+  the build directory is reconfigured, and the version would then lie about
+  the build.
+
+== Existing installations
+
+* The settings in `~/.config/lxqt/panel.conf` and the plugin's identity
+  (`type=weather` → `weather.desktop`, `libweather.so`) do not change: a panel
+  keeps its widget and its settings across an upgrade.
+* Files installed by `install.sh` or `make install` belong to no package.
+  Installing the package replaces them — dpkg overwrites files that no
+  package owns — and from then on `apt` owns them. `install.sh` keeps working
+  for builds from source, and overwrites the package's files if run after it.
+
+== Constitution
+
+* A new section "Releases and versions" with the rules above.
+* Section "Verifiability": the checks — build and tests — run in GitHub
+  Actions on every push and pull request, and gate the release; tests are
+  Qt Test programs under CTest, without a display and without the network.
+* Section "Stack and layout": the version header, `tools/relnotes`,
+  `tests/`, `scripts/`, `.github/workflows/`, the `ctest` and `cpack`
+  commands.
+* Section "Documentation": `RELEASE-NOTES.adoc`.
+* Section "External services": the User-Agent.
+* The open questions "Versions and releases" and "Automated tests and CI" are
+  closed.
+
+== Acceptance criteria
+
+[cols="1,6"]
+|===
+| # | Criterion and method
+
+| K1
+| Release text: from the real `RELEASE-NOTES.adoc`, the chapter of 0.1.0
+  without its heading; from a fixture, a patch — only its subsection, and a
+  chapter — without the text of its patches; a missing section — an error.
+  Links broken over a line, `Label::` and bold translated. Test
+  `relnotes_test` under `ctest`.
+
+| K2
+| `scripts/release.sh` refuses before building: no tag or a malformed one —
+  usage; a missing or lightweight tag — "not an annotated tag"; a tag not
+  pushed to `origin`; a tag already released — the last two with `v0.1.0`,
+  before its push and after its release. Run on ws1; in no case is a
+  worktree made.
+
+| K3
+| Version: in a working copy, `weather-test --version` equals
+  `git describe --tags --always --dirty`; after an edit, and after a commit,
+  `cmake --build` without reconfiguring follows it, and a second
+  `cmake --build` recompiles nothing. Both requests send
+  `User-Agent: lxqt-weather/<version>` — seen with `strace` on
+  `weather-test`. The settings dialog shows the version — manual scenario on
+  ws1.
+
+| K4
+| Package from the branch, built on ws1 like the release: `dpkg-deb -c` lists
+  exactly the three files; `dpkg-deb -f` gives `Package: lxqt-weather`, the
+  version, and `Depends` with Qt 5 and `lxqt-panel`.
+
+| K5
+| Build: both targets and the new ones build with no warnings other than the
+  known `QNetworkConfigurationManager` deprecations. The same configure,
+  build, `ctest` and `cpack` pass in a local `debian:bookworm` container with
+  `scripts/debian-deps.sh`, and workflow `test` passes on GitHub for the
+  branch and for its pull request.
+
+| K6
+| Release `v0.1.0`: the two files; the downloaded package matches
+  `SHA256SUMS`; `dpkg-deb -f` gives `Version: 0.1.0`; installed on ws1, it
+  owns the three files (`dpkg -S`), and after a panel restart the widget
+  shows the weather and its settings dialog shows `lxqt-weather v0.1.0`.
+|===
+
+== Results
+
+2026-10-01, ws1 (Debian 12) and a local `debian:bookworm` container.
+
+[cols="1,6"]
+|===
+| # | How it is met
+
+| K1 | `relnotes_test`: `extractNotes`, `extractLevels` (four rows),
+  `markdownTranslation` — passed under `ctest`.
+| K2 | ws1: no tag and `v0.1` — the usage, exit code 2; `v9.9.9` — "v9.9.9 is
+  not an annotated tag", exit code 1; no worktree was made. An unpushed tag
+  and an existing release — with `v0.1.0`.
+| K3 | ws1: `weather-test --version` — `lxqt-weather d9515ac-dirty`, equal to
+  `git describe --tags --always --dirty`; a second `cmake --build` compiles
+  and links nothing. `strace` of `weather-test` (`QT_QPA_PLATFORM=offscreen`):
+  `GET /json/` and `GET /v1/forecast…`, both with
+  `User-Agent: lxqt-weather/d9515ac-dirty`. After the commit `5fe4d1c`,
+  `cmake --build` without reconfiguring recompiled the six objects that
+  include the header, and `weather-test --version` gave `lxqt-weather
+  5fe4d1c`, equal to `git describe`; the next build compiled nothing. The
+  settings dialog — with K6.
+| K4 | `lxqt-weather_0.1.0_amd64.deb`: `/usr/bin/weather-test`,
+  `/usr/lib/x86_64-linux-gnu/lxqt-panel/libweather.so`,
+  `/usr/share/lxqt/lxqt-panel/weather.desktop`; `Package: lxqt-weather`,
+  `Version: 0.1.0`, `Depends: lxqt-panel, libc6 (>= 2.34), libgcc-s1,
+  libqt5core5a (>= 5.15.1), libqt5gui5, libqt5network5 (>= 5.15.1),
+  libqt5widgets5, libstdc++6`. `libweather.so` needs no LXQt library
+  (`readelf -d`); `PluginSettings::value`, `setValue` and `contains` are
+  undefined in it (`nm -D`) and come from `lxqt-panel`.
+| K5 | ws1: the only warnings are ten `QNetworkConfigurationManager`
+  deprecations. Container `debian:bookworm` (Debian 12, CMake 3.25.1,
+  g++ 12.2.0, Qt 5.15.8, lxqt-panel 1.2.1, gh 2.23.0): the first run failed
+  at `pkg_check_modules(lxqt)` — `lxqt.pc` requires `Qt5X11Extras`, which
+  `liblxqt1-dev` does not pull — and `libqt5x11extras5-dev` joined
+  `scripts/debian-deps.sh`; then configure, build (the same warnings, 3 s),
+  `ctest` and `cpack` passed, with the files and `Depends` of K4.
+  `actionlint` 1.7.12 — no errors in either workflow; `shellcheck` — none
+  in the scripts. GitHub: workflow `test` passed for the push of the branch
+  (run 36778741574) and for pull request #2 (run 36778741534), about 70 s
+  each; Qt 5.15.8, LXQt 1.2.0, the same ten warnings, `ctest` passed.
+|===
+
+== Outside the specification
+
+* Other architectures and distributions, LXQt 2 and Qt 6 — the open question
+  "Target platforms" stays open.
+* An APT repository, signed packages.
+* Installing from a release through `install.sh`.
+* The divergences of `README.md` from the code other than its "Changelog" —
+  the open question stays open.

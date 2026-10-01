@@ -30,8 +30,25 @@ Geolocation is determined via **ip-api.com** with fallback to Moscow.
 
 - **GCC 12+** (as specified by user)
 - **CMake 3.16+**
-- **Qt5** (Core, Widgets, Network)
+- **Qt5** (Core, Widgets, Network, Test)
 - **LXQt development libraries** (for full panel integration)
+
+## 📦 Install from a Release
+
+Every version is a [GitHub release](https://github.com/almaz-uno/lxqt-weather/releases)
+with a Debian package built on Debian 12 for amd64 (LXQt 1.2, Qt 5.15) and its checksum:
+
+```bash
+# In the directory with the downloaded lxqt-weather_X.Y.Z_amd64.deb and SHA256SUMS
+sha256sum -c SHA256SUMS
+sudo apt install ./lxqt-weather_X.Y.Z_amd64.deb
+killall lxqt-panel && lxqt-panel &
+```
+
+The package installs the same files as `install.sh` and takes over a copy
+installed by it; the panel keeps the widget and its settings. Remove it with
+`sudo apt remove lxqt-weather`. The installed version is shown at the bottom
+of the widget's settings dialog and printed by `weather-test --version`.
 
 ## 🔧 Build and Installation
 
@@ -69,8 +86,12 @@ If you prefer manual control:
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
+ctest --output-on-failure
 sudo make install
 ```
+
+The version of a build is `git describe --tags --always --dirty` of the
+working copy, `dev` outside a repository.
 
 ### Manual Dependency Installation
 
@@ -104,6 +125,9 @@ After building, you can test the widget without installing it to the panel:
 
 # Or after installation
 weather-test
+
+# The version of the build, without a display
+weather-test --version
 ```
 
 The test application allows you to:
@@ -186,7 +210,13 @@ If automatic location detection is impossible, Moscow (55.7558°N, 37.6176°E) i
 ├── data/
 │   ├── weather.desktop              # Plugin description
 │   └── icons/                       # Weather SVG icons
+├── cmake/version.cmake              # Version of a build from git
+├── tools/relnotes/                  # Release text from RELEASE-NOTES.adoc
+├── tests/                           # Qt Test programs, run by ctest
+├── scripts/                         # Release script, CI build dependencies
+├── specs/                           # Specifications and the constitution
 ├── CMakeLists.txt                   # Build configuration
+├── RELEASE-NOTES.adoc               # Release notes
 └── README.md                        # Documentation
 ```
 
@@ -206,19 +236,9 @@ MIT License - see [LICENSE](LICENSE) file
 - **Client**: LXQt panel widget development expert
 - **Year**: 2025
 
-## 🔄 Changelog
+## 🔄 Release Notes
 
-### v1.1.0 (2025-01-15)
-- ✅ **Migration to Open-Meteo API** - removed need for API keys
-- ✅ **Simplified setup** - works out of the box
-- ✅ **Improved reliability** - free and stable API
-- ✅ **Environmental friendliness** - API runs on renewable energy
-
-### v1.0.0 (2025-01-15)
-- ✅ Initial implementation with OpenWeatherMap API
-- ✅ Basic weather display functionality
-- ✅ LXQt panel integration
-- ✅ Settings and geolocation support
+What each version changed: [RELEASE-NOTES.adoc](RELEASE-NOTES.adoc).
 
 ---
 
