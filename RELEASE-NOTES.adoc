@@ -40,3 +40,11 @@ the widget had before versions were introduced, and versions and releases.
   `SHA256SUMS`. The package installs the same three files as `install.sh`
   and replaces a copy installed by it; the panel keeps the widget and its
   settings.
+
+=== 0.1.1 — 2026-10-01
+
+Fixed::
+* The settings dialog cut off the last lines of its "Information" group —
+  the version among them — when its fonts needed more height than its fixed
+  minimum size, as at 108 dpi. The dialog now takes the height of its
+  content (link:specs/001-releases/spec.adoc[specification 001], K6).

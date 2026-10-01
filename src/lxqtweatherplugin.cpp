@@ -77,13 +77,12 @@ QDialog* LXQtWeatherPlugin::configureDialog()
     QDialog *dialog = new QDialog();
     dialog->setWindowTitle("Weather Widget Settings");
 
-    // Calculate DPI-aware dialog size
+    // Calculate DPI-aware default dialog size; the dialog opens no smaller,
+    // and grows to its content (see the end of this function)
     int dpi = dialog->logicalDpiX();
     double scaleFactor = dpi / 96.0;
     int dialogWidth = qRound(400 * scaleFactor);
     int dialogHeight = qRound(300 * scaleFactor);
-    dialog->setMinimumSize(dialogWidth, dialogHeight);
-    dialog->resize(dialogWidth, dialogHeight);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
 
@@ -201,6 +200,11 @@ QDialog* LXQtWeatherPlugin::configureDialog()
              << "Dialog size:" << dialogWidth << "x" << dialogHeight
              << "Font sizes: group=" << groupTitleFontSize << "px, label=" << labelFontSize
              << "px, control=" << controlFontSize << "px, info=" << infoFontSize << "px";
+
+    // The content decides the height, and the layout the minimum size: a
+    // fixed minimum clipped the last lines of the "Information" group — the
+    // version among them — at 108 dpi (issue #3)
+    dialog->resize(dialog->sizeHint().expandedTo(QSize(dialogWidth, dialogHeight)));
 
     return dialog;
 }
