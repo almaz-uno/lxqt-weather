@@ -1,0 +1,45 @@
+= 002 — research
+:toc: left
+:toc-title: Contents
+:revdate: 2026-10-01
+
+== R1 — the author's address in Nominatim
+
+2026-10-01, `https://nominatim.openstreetmap.org/search`, `format=jsonv2`:
+
+* "Большой бульвар 42 строение 1, Сколково, Москва", "Bolshoy Boulevard 42c1,
+  Skolkovo" — nothing;
+* street "42с1 Большой бульвар", city "Москва" — the street only, two
+  segments (55.6980268, 37.3563531 and 55.6821191, 37.3471973);
+* street "42 Большой бульвар", city "Москва", and "Технопарк Сколково" — the
+  building "Технопарк", house number "42 к1", way 382743663, at 55.6927882,
+  37.3474601; its outline spans 55.6909597–55.6940666 by
+  37.3467481–37.3482626, about 345 × 95 m.
+
+OpenStreetMap records the Technopark as "42 к1", while its official address
+is "42, стр. 1": the author's spelling is not found, the name is. Hence the
+coordinates accepted in the same field.
+
+== R2 — the geocoder of Open-Meteo
+
+2026-10-01, `https://geocoding-api.open-meteo.com/v1/search`: "Сколково" and
+"Skolkovo" — populated places (feature code `PPL`), the first 55.68784,
+37.36836, about 1.5 km from the Technopark; "Большой бульвар 42с1" — nothing.
+It finds places by name, not addresses.
+
+== R3 — the Nominatim usage policy
+
+`https://operations.osmfoundation.org/policies/nominatim/`, read 2026-10-01:
+
+* at most one request per second;
+* a User-Agent or Referer identifying the application — not a library's
+  default;
+* results cached on the client;
+* no client-side autocomplete, no systematic queries;
+* attribution suitable for the medium, data under ODbL;
+* a client application must be able to switch the service at the
+  foundation's request without a software update.
+
+The widget makes one request per OK of the settings dialog, stores the
+result, names itself in the User-Agent, attributes the data in the dialog, and
+takes the service from the key `geocoder_url`.

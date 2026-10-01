@@ -1,0 +1,45 @@
+= 002 — plan
+:toc: left
+:toc-title: Contents
+:revdate: 2026-10-01
+
+== Files
+
+[cols="2,5"]
+|===
+| File | What changes
+
+| `src/geocoder.{h,cpp}`
+| New, no LXQt. `parseCoordinates(text)`; `Geocoder` — one search: request
+  built from `geocoder_url` and the version, 10 s timeout, the response
+  parsed into coordinates and a short name; signals `found` and `failed`.
+  Parsing is a free function, so that the test needs no network.
+
+| `src/lxqtweatherwidget.{h,cpp}`
+| `IWeatherSettings` gains removal of a key. With `location_latitude` and
+  `location_longitude` set: no `GeoLocation` request, weather for them, the
+  tooltip name and the map from them.
+
+| `src/lxqtweatherplugin.cpp`, `src/main.cpp`
+| The field, the result line, OK with the search; the "Information" text with
+  the attribution. The same field in `weather-test`.
+
+| `CMakeLists.txt`
+| `src/geocoder.cpp` in `weather` and `weather-test`; target `geocoder_test`.
+
+| `tests/geocoder_test.cpp`, `tests/nominatim-*.json`
+| New. K1, on recorded responses of R1.
+
+| `README.md`, `RELEASE-NOTES.adoc`, `specs/constitution.adoc`
+| The setting, 0.2.0, the sections listed in the specification.
+|===
+
+== Order
+
+. This specification — the first commit of the branch, the pull request a
+  draft.
+. `geocoder` and its test (K1).
+. The widget, the dialog, `weather-test`; K2–K5 on ws1, in a
+  `debian:bookworm` container and on GitHub.
+. The results, `:status: implemented`, the pull request ready.
+. Release 0.2.0 by the author's tag; K6.
