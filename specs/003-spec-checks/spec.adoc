@@ -3,7 +3,7 @@
 :toc-title: Contents
 :sectnums:
 :revdate: 2026-10-01
-:status: draft
+:status: implemented
 :issue: 5
 
 == What and why
@@ -176,6 +176,30 @@ committed — with the number of its issue, which the order of
 | K5
 | The pull request is opened as a draft and marked ready with the commit
   that writes section "Results".
+|===
+
+== Results
+
+2026-10-01, ws1 (Debian 12, bash 5.2.15), a local `debian:bookworm`
+container and GitHub Actions.
+
+[cols="1,6"]
+|===
+| # | How it is met
+
+| K1 | `scripts/check-specs.sh` at `9cebdf5` exits 0, on ws1 and in the
+  container. Before the status of 001 was rewritten, it named that status
+  and nothing else.
+| K2 | `diff` with `scripts/check-specs.sh` of qws at `f60f05d`: line 2
+  alone, `specs/009-spec-checks` against `specs/003-spec-checks`.
+| K3 | Workflow `test` on `9cebdf5`: run 36879566053 (push) and 36879571944
+  (pull request), step `specs` — the fifth, after the checkout and before
+  `build dependencies` — passed, then the build and `ctest`.
+| K4 | Sections "Specifications", "Verifiability" and "Stack and layout" of
+  the constitution; "Layout", "Relation to issues" and "Rules" of
+  `specs/README.adoc`.
+| K5 | Pull request #6 opened as a draft and marked ready after the commit
+  that writes this section.
 |===
 
 == Outside the specification
