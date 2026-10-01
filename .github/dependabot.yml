@@ -1,0 +1,16 @@
+# Dependency updates (specs/004-dependency-updates): once a month Dependabot
+# proposes the new versions of the actions of the workflows, one pull request
+# into develop, checked by workflow test as any other. Security updates do not
+# wait for the month. Qt and LXQt are Debian packages, which it does not see.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "⬆️ build"
+      include: scope
