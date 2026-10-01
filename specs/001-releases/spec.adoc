@@ -3,7 +3,7 @@
 :toc-title: Contents
 :sectnums:
 :revdate: 2026-10-01
-:status: implemented; v0.1.0 released 2026-10-01; K1–K5 met; K6 failed on v0.1.0 — the settings dialog clipped the version line (issue #3) — and is repeated on v0.1.1 (section "Results")
+:status: implemented
 :issue: 1
 
 == What and why
