@@ -3,7 +3,7 @@
 :toc-title: Contents
 :sectnums:
 :revdate: 2026-10-01
-:status: draft
+:status: implemented
 :issue: 7
 
 == What and why
@@ -133,6 +133,50 @@ versions").
 | Release 0.2.0, installed by the author on ws1, ws2 and ws3, the location set
   in the panel: the tooltip names the place, the middle click opens the map
   there — manual scenario.
+|===
+
+== Results
+
+2026-10-01, ws1 (Debian 12) and a local `debian:bookworm` container; ws1
+reaches the internet through a VPN with its exit in Frankfurt am Main.
+
+[cols="1,6"]
+|===
+| # | How it is met
+
+| K1 | `geocoder_test` under `ctest`, 25 checks passed: coordinates (nine
+  rows: comma, spaces, signs, padding; out of range, an address, one and
+  three numbers rejected); the name of coordinates; the recorded building and
+  street of research R1 with their coordinates and names, the empty response
+  — "not found", three malformed ones — an error, a name from
+  `display_name`; the request URL with and without a trailing slash of
+  `geocoder_url`, its User-Agent; the setting — coordinates stored at once,
+  an empty text removing the four keys, unchanged text not searched (the
+  geocoder pointed at a closed port, no failure), a search against a local
+  server on the loopback storing the building and sending
+  `GET /search?…` with `User-Agent: lxqt-weather/<version>`, and "not found"
+  keeping the stored location.
+| K2 | `weather-test --location "Технопарк Сколково"` under `strace`,
+  `QT_QPA_PLATFORM=offscreen`: "Технопарк (55.6928, 37.3475)" — the stored
+  name and coordinates, 55.6927882 and 37.3474601; connections on port 443
+  only to the addresses of Nominatim (151.101.x.91); no `GET /json/`; the
+  weather requested twice — on applying and by the first scheduled refresh —
+  for 55.692788, 37.347460.
+| K3 | "Zzqxv Nonexistent 98765" — "Location not saved: not found"; the
+  location stays the one by IP (`GET /json/`, 50.1169, 8.6837). "Сколково,
+  Большой бульвар 42с1" — "Большой бульвар (55.6851, 37.3351)": the street,
+  another segment of it than in the recorded response (55.6980, 37.3564) —
+  Nominatim returns different segments from one request to another, which is
+  why the found place is shown.
+| K4 | No location: one `GET /json/` to ip-api.com, the weather for 50.1169,
+  8.6837, as in 0.1.x. Clearing a stored location removes its four keys
+  (K1, `settingEmpty`).
+| K5 | ws1 and the container: the only warnings are the ten
+  `QNetworkConfigurationManager` deprecations; `scripts/check-specs.sh`
+  passes; `ctest` — both tests. Workflow `test` on GitHub: the push of the
+  branch (run 36890867992) and pull request #8 (run 36890874793), about
+  70 s each.
+| K6 | After the release 0.2.0, by the author.
 |===
 
 == Open questions
