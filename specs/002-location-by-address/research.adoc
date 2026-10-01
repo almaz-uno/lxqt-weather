@@ -14,11 +14,21 @@
 * street "42 Большой бульвар", city "Москва", and "Технопарк Сколково" — the
   building "Технопарк", house number "42 к1", way 382743663, at 55.6927882,
   37.3474601; its outline spans 55.6909597–55.6940666 by
-  37.3467481–37.3482626, about 345 × 95 m.
+  37.3467481–37.3482626, about 345 × 95 m;
+* free text "Сколково, Большой бульвар 42с1" (the form the widget sends,
+  `q=` with `limit=1`) — not the building but the street, "Большой бульвар"
+  at 55.6980268, 37.3563531 (way 700843381, `addresstype` `road`), about
+  1 km from the Technopark: Nominatim falls back to what it knows.
 
 OpenStreetMap records the Technopark as "42 к1", while its official address
-is "42, стр. 1": the author's spelling is not found, the name is. Hence the
+is "42, стр. 1": the author's spelling finds the street, the name finds the
+building. Hence the name of the found place shown in the dialog — the street
+tells the author at once that the building was not found — and the
 coordinates accepted in the same field.
+
+The responses of "Технопарк Сколково", "Сколково, Большой бульвар 42с1" and
+"Zzqxv Nonexistent 98765" are recorded in `tests/nominatim-found.json`,
+`tests/nominatim-street.json` and `tests/nominatim-empty.json` (`[]`).
 
 == R2 — the geocoder of Open-Meteo
 

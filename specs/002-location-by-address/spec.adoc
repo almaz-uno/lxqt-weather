@@ -58,9 +58,13 @@ Text unchanged since it was last saved is not searched again.
   are found by Nominatim, © OpenStreetMap contributors; `README.md` says the
   same.
 . *`weather-test`* gets the same field in its "Settings" group, through the
-  same code, so that the search can be checked without the panel. The search
-  and the parsing live outside the plugin files (constitution, "Stack and
-  layout": LXQt headers stay in `lxqtweatherplugin.h`).
+  same code, so that the search can be checked without the panel;
+  `weather-test --location <text>` fills the field and applies it at start.
+  The search, the parsing and the keys live outside the plugin files
+  (constitution, "Stack and layout": LXQt headers stay in
+  `lxqtweatherplugin.h`); `IWeatherSettings` moves from
+  `lxqtweatherwidget.h` to a header of its own, so that they need no widget,
+  and gains the removal of a key.
 
 == Choices made for the author
 
@@ -99,10 +103,12 @@ versions").
 | K1
 | Test `geocoder_test` under `ctest`, without the network: coordinates parsed
   from `55.6928, 37.3475`, `55.6928 37.3475`, `-33.92,18.42`; rejected out of
-  range and as other text; a recorded Nominatim response gives the
-  coordinates and the short name; an empty array — "not found"; a malformed
-  one — an error; the request URL and User-Agent built from `geocoder_url`
-  and the version.
+  range and as other text; the recorded responses of research R1 give the
+  building and the street with their coordinates and short names, the empty
+  one — "not found", a malformed one — an error; the request URL and
+  User-Agent built from `geocoder_url` and the version. The setting: an empty
+  text removes the four keys, coordinates are stored with no search, text
+  unchanged since it was saved is not searched again.
 
 | K2
 | ws1, `weather-test`: "Технопарк Сколково" — coordinates within 0.001° of
@@ -110,8 +116,10 @@ versions").
   Nominatim on OK, none to ip-api.com on the refreshes after it.
 
 | K3
-| ws1, `weather-test`: "Сколково, Большой бульвар 42с1" — "not found" in the
-  dialog, the stored location and the weather unchanged.
+| ws1, `weather-test`: "Zzqxv Nonexistent 98765" — "not found" under the
+  field, the stored location and the weather unchanged. "Сколково, Большой
+  бульвар 42с1" — the street, "Большой бульвар", shown under the field
+  (research, R1).
 
 | K4
 | ws1, `weather-test`: field cleared — the location by IP again; `strace`
