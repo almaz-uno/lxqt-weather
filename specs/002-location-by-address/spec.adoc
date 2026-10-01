@@ -176,7 +176,23 @@ reaches the internet through a VPN with its exit in Frankfurt am Main.
   passes; `ctest` — both tests. Workflow `test` on GitHub: the push of the
   branch (run 36890867992) and pull request #8 (run 36890874793), about
   70 s each.
-| K6 | After the release 0.2.0, by the author.
+| K6 | Release `v0.2.0`, tag on `7110204` (the merge of pull request #8),
+  run 36905084215: `test / test` 18:12:22–18:13:32 UTC, `release`
+  18:13:35–18:14:43 — after it; the downloaded package passes
+  `sha256sum -c`, `Version: 0.2.0`, `weather-test --version` —
+  `lxqt-weather v0.2.0`. Installed on the author's instruction on ws1, ws2
+  and ws3 with `apt`, replacing 0.1.0 on ws1 and the `make install` builds
+  of 2025 on ws2 and ws3. The location was written into each
+  `panel.conf` with the values the dialog stores for "Технопарк
+  Сколково" — the result of K2 — through `QSettings`, the encoding of the
+  panel; a dry run on a copy showed that without QtGui loaded `QSettings`
+  rewrote the panel's colours (`QColor` cannot be saved), and with it the
+  diff was the four keys alone. After the restart each panel maps the
+  installed `libweather.so` (the same inode) and logs `location =
+  "Технопарк"` and the weather request for 55.692788, 37.347460 — 6.6 °C,
+  overcast; no request to ip-api.com. The author checked the tooltip, the
+  map and the settings dialog: "Технопарк (55.6928, 37.3475)" under the
+  field.
 |===
 
 == Open questions

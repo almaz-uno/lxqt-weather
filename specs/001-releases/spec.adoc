@@ -251,6 +251,18 @@ author may overturn any of them.
   than that default, and the layout sets the minimum; the dialog code built
   outside the panel gives the label exactly the height it needs at 96, 108,
   144 and 192 dpi. K6 is repeated on v0.1.1.
+
+  Release `v0.1.1`, tag on `977f519` (the merge of pull request #4), run
+36883390973: `test / test` 15:19:54–15:20:52 UTC, `release`
+15:20:58–15:22:49 — after it; `lxqt-weather_0.1.1_amd64.deb` (114 160
+bytes) and `SHA256SUMS`, `sha256sum -c` passes, `Version: 0.1.1`,
+`weather-test --version` — `lxqt-weather v0.1.1`; the text is the
+subsection 0.1.1 alone. It was not installed: 0.2.0 followed the same day.
+
+  K6 repeated on v0.2.0, 2026-10-01: the package installed on ws1, ws2 and
+ws3, each `lxqt-panel` restarted and mapping the installed `libweather.so`
+(the same inode); the settings dialog shows `lxqt-weather v0.2.0` at the
+bottom of "Information" — checked by the author.
 |===
 
 == Outside the specification
