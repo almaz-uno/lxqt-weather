@@ -103,7 +103,9 @@ Documentation describing behavior:
    packages of the build environment; `scripts/check-specs.sh` — the form
    of `specs/` (section "Specifications");
 ** `.github/workflows/` — CI and releases (section "Releases and
-   versions").
+   versions");
+** `.github/dependabot.yml` — pull requests that update the actions of the
+   workflows, once a month (specification `004-dependency-updates`).
 * LXQt headers are included only by `src/lxqtweatherplugin.h`. The widget
   receives its settings through the `IWeatherSettings` interface
   (`src/weathersettings.h`), implemented by `PluginSettingsAdapter` in the

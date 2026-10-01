@@ -1,0 +1,147 @@
+= 004 — dependency updates proposed by Dependabot
+:toc: left
+:toc-title: Contents
+:sectnums:
+:revdate: 2026-10-01
+:status: implemented
+:issue: 11
+
+== What and why
+
+The workflows of lxqt-weather use `actions/checkout@v7`, current on
+2026-10-01 (v7.0.1), and nothing will say when v8 comes out or when an
+advisory is published for the action. The same change in qws and siphon also
+covers Go modules; here the libraries are Qt 5 and LXQt, which come as
+Debian packages.
+
+The change:
+
+. `.github/dependabot.yml`: Dependabot proposes the updates of the actions of
+  the workflows once a month, one pull request into `develop`;
+. Dependabot alerts and security updates are turned on in the settings of
+  the repository: an action with a published advisory gets a pull request
+  without waiting for the month.
+
+Unchanged: the widget; the workflows; the reference environment
+(constitution, "Stack and layout") — Qt, LXQt, GCC and CMake are Debian 12
+packages of `scripts/debian-deps.sh`, Dependabot has no ecosystem for them,
+and Debian 12 is kept on purpose; the container `debian:bookworm` of the
+workflows, which Dependabot does not update. A Dependabot pull request is
+reviewed and merged by the author like any other and goes through workflow
+`test`.
+
+== Choices made for the author
+
+Each is the recommended option, taken so that the work could proceed; the
+author may overturn any of them.
+
+. *Actions only.* `CMakeLists.txt` finds Qt and LXQt with `find_package` and
+  pkg-config; there is no manifest Dependabot reads.
+. *Once a month, as in qws and siphon.* An action that fixes a
+  vulnerability comes as a security update, as soon as the advisory is
+  published.
+. *One pull request for all actions* (`groups`, pattern `*`), majors
+  included: workflow `test` checks a major version of an action just as a
+  minor one.
+. *Commit message `⬆️ build(deps): …`*: the gitmoji of upgraded
+  dependencies and the Conventional Commits type `build`, after the style of
+  the history (constitution, "Working with history"). The rest is
+  Dependabot's: "bump the actions group with 1 update".
+. *Default labels* — `dependencies` and `github_actions`; Dependabot creates
+  them.
+
+== Behavior
+
+`.github/dependabot.yml`:
+
+[source,yaml]
+----
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "⬆️ build"
+      include: scope
+----
+
+Dependabot reads the file from `develop`, the default branch, and checks the
+actions of `uses:` in `.github/workflows/` as soon as it appears there, then
+once a month; each check is a run of "Dependabot Updates" in the Actions
+tab. A reference `@v7` moves to `@v8` when v8 is released; a patch within v7
+needs no pull request. A security update is a pull request of its own,
+outside the group, with the same commit message.
+
+== Constitution
+
+Section "Stack and layout" names `.github/dependabot.yml` among what is
+outside the widget, next to `.github/workflows/`.
+
+== Acceptance criteria
+
+[cols="1,6"]
+|===
+| # | Criterion and method
+
+| K1
+| `.github/dependabot.yml` is valid against the schema of the file,
+  `https://json.schemastore.org/dependabot-2.0.json`:
+  `check-jsonschema --schemafile <schema> .github/dependabot.yml` exits 0.
+
+| K2
+| After the merge, the first run of "Dependabot Updates" for
+  `github-actions` passes (`gh run list -R almaz-uno/lxqt-weather -e
+  dynamic`); with `@v7` current, it opens no pull request.
+
+| K3
+| `gh api repos/almaz-uno/lxqt-weather/vulnerability-alerts` answers 204,
+  and `gh api repos/almaz-uno/lxqt-weather/automated-security-fixes`
+  answers `"enabled":true`.
+
+| K4
+| `scripts/check-specs.sh` passes on the branch: the check of
+  specifications 001–004.
+
+| K5
+| Section "Stack and layout" of the constitution names
+  `.github/dependabot.yml`.
+|===
+
+K2 can only be met after the merge: Dependabot reads its configuration from
+the default branch alone. Its result reaches `develop` by a pull request of
+its own from the same branch.
+
+== Results
+
+2026-10-01, ws1 (Debian 12, bash 5.2.15) and GitHub.
+
+[cols="1,6"]
+|===
+| # | How it is met
+
+| K1 | `check-jsonschema` 0.38.2 with the schema fetched on 2026-10-01 exits
+  0 at `198b3ad`; the file of qws with `interval: fortnightly` fails, so the
+  check is not vacuous.
+| K2 | After the merge, by a pull request of its own.
+| K3 | After `gh api -X PUT` of both on 2026-10-01: `vulnerability-alerts`
+  answers 204, `automated-security-fixes` answers
+  `{"enabled":true,"paused":false}`.
+| K4 | `scripts/check-specs.sh` at `198b3ad` exits 0. Workflow `test` on
+  `198b3ad`: run 36910387926 (push) and 36910397064 (pull request), step
+  `specs` passed, then the build and `ctest`.
+| K5 | Section "Stack and layout" of the constitution, the item after
+  `.github/workflows/`.
+|===
+
+== Open decisions
+
+* *A cooldown.* Option `cooldown` (`default-days`) makes Dependabot skip a
+  version until it is so many days old, so that a compromised release is
+  more likely withdrawn before it is proposed. Not set, as in qws and
+  siphon: a monthly check already proposes most versions weeks after their
+  release, and a security update ignores it.
