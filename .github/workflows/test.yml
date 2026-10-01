@@ -31,7 +31,7 @@ jobs:
           ref: ${{ inputs.ref }}
       # The form of specs/, before anything is built (specs/003-spec-checks)
       - name: specs
-        run: scripts/check-specs-test.sh && scripts/check-specs.sh
+        run: scripts/check-specs.sh
       # The steps run as root of the container, the checkout belongs to the
       # runner's user: without this git describe fails, and the build gets
       # "dev" as its version

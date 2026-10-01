@@ -95,9 +95,8 @@ Documentation describing behavior:
 ** `tools/relnotes` — the text of a release from `RELEASE-NOTES.adoc`;
 ** `tests/` — Qt Test programs;
 ** `scripts/release.sh` — the release; `scripts/debian-deps.sh` — the
-   packages of the build environment; `scripts/check-specs.sh` and
-   `scripts/check-specs-test.sh` — the form of `specs/` and its test
-   (section "Specifications");
+   packages of the build environment; `scripts/check-specs.sh` — the form
+   of `specs/` (section "Specifications");
 ** `.github/workflows/` — CI and releases (section "Releases and
    versions").
 * LXQt headers are included only by `src/lxqtweatherplugin.h`. The widget
@@ -276,11 +275,10 @@ The section is introduced by specification `003-spec-checks`.
 * A specification does not copy what git and GitHub hold — whether the
   change is merged or released, whether its issue is closed: such a fact
   arrives after the last commit of the change and cannot be written in it.
-* The form of `specs/` is checked by `scripts/check-specs.sh` and its own
-  test, `scripts/check-specs-test.sh`, before a change is proposed and in
-  workflow `test`. The check sees the form, not the truth: that a
-  specification matches the code rests on its criteria (section "Decisions
-  rest on measurements").
+* The form of `specs/` is checked by `scripts/check-specs.sh` before a change
+  is proposed and in workflow `test`. The check sees the form, not the truth:
+  that a specification matches the code rests on its criteria (section
+  "Decisions rest on measurements").
 
 == What the constitution does not regulate
 

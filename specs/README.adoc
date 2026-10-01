@@ -36,9 +36,9 @@ same directory next to the documents when its size and content allow keeping
 it in the repository; otherwise the specification says where it is and how to
 reproduce it.
 
-The form of the directory is checked by `scripts/check-specs.sh`, after its
-own test `scripts/check-specs-test.sh` — locally before a change is proposed
-and in workflow `test` (specification `003-spec-checks`):
+The form of the directory is checked by `scripts/check-specs.sh` — locally
+before a change is proposed and in workflow `test` (specification
+`003-spec-checks`):
 
 * every entry of `specs/` is `README.adoc`, `constitution.adoc` or a
   directory `NNN-slug` — three digits, a hyphen, lowercase words of letters
