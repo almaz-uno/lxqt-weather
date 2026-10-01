@@ -1,0 +1,208 @@
+= 003 — specifications checked by their form
+:toc: left
+:toc-title: Contents
+:sectnums:
+:revdate: 2026-10-01
+:status: implemented
+:issue: 5
+
+== What and why
+
+The constitution leaves the SDD framework open: OpenSpec, GSD, Spec Kit or a
+layout of our own. The author keeps the project's own layout (2026-10-01), in
+lxqt-weather as in qws and siphon: simplicity is a condition of its
+reliability.
+
+Reliability is what the layout lacks: its form rests on discipline. `:status:`
+is free text that mixes three things — the stage of the change, how its
+criteria are met, which section "Results" already says, and facts git and
+GitHub hold, such as "released". Such facts lag behind: a merge or a release
+happens after the last commit of the change, so it cannot be written in it.
+In qws three statuses of seven said "not merged" after the merge, and in
+siphon two said "is released by" after the release. The status of 001 here
+was rewritten twice after it was written — after the push (`f3c28d0`) and
+after the release (`3a56e72`) — and waits for v0.1.1.
+
+The change:
+
+. closes the open question: the layout stays the project's own;
+. `:status:` takes one of three values, each set within the change it
+  describes;
+. the form of `specs/` is checked mechanically, locally and in workflow
+  `test`;
+. a pull request whose specification is not yet `implemented` is a draft.
+
+Unchanged: the widget; the documents of a change and when each is needed; the
+numbering of directories; the order of issue, branch and specification; the
+content of specification 001 except `:status:`.
+
+This branch is built on that of pull request #4 (issue #3): both rewrite the
+status of 001, and built on it this change merges cleanly whichever of the two
+is merged first.
+
+== Choices made for the author
+
+Each is the recommended option, taken so that the work could proceed; the
+author may overturn any of them.
+
+. *No external framework.* Each of the three brings Markdown among AsciiDoc
+  documents, directories and commands of its own and a release cycle the
+  project does not control. None removes a failure the project has: the
+  status that lags behind would lag behind in any of them.
+. *No specifications of the current state.* OpenSpec keeps a description of
+  the current behavior next to the changes; here that role is played by
+  `README.md` and the texts of the widget, kept up to date by the
+  constitution (section "Documentation is part of the change, not its
+  consequence"). A second description of the same behavior is a second
+  source of truth.
+. *Three values of `:status:`*, each set within the change: `draft`,
+  `implemented`, `dropped`. Since the specification and the code reach
+  `develop` in one merge, `implemented` on `develop` means the code is there.
+  The values are the same English words in the three projects.
+. *`:issue:` in every specification*, `draft` included: the issue comes first
+  (`specs/README.adoc`, "Relation to issues"), so a committed specification
+  always has its number.
+. *No test of the check.* In qws a test of nine cases and a script that broke
+  the check one rule at a time were written, and the author removed them
+  (2026-10-01): some 90 lines of test guarding some 60 of check are more
+  complex than what they guard. The check is short enough to be read, and it
+  is that of qws, where it was tried on each violation.
+. *A shell script, not a CTest test.* The check is the same in three
+  projects, two of them in Go; one logic is read once. It runs before the
+  build, so a malformed `specs/` is reported without compiling anything.
+. *A draft pull request until the results.* In qws, pull request #23 was
+  merged 43 s before the commit that wrote its results: those results cite
+  the checks of the pull request itself, so they follow its opening, and in
+  between a green pull request looked ready while its specification said
+  `draft`. GitHub does not merge a draft.
+. *What is not checked.* The check sees the form, not the truth: that a
+  specification matches the code rests on criteria that name a test, a
+  measurement or a reproducible scenario (constitution, "Decisions rest on
+  measurements"). Neither are checked `:revdate:` — its presence says nothing
+  of its correctness — nor gaps in the numbering.
+
+== Behavior
+
+`scripts/check-specs.sh`, locally and in workflow `test`, where it runs right
+after the checkout, before the build. The check passes when:
+
+* every entry of `specs/` is `README.adoc`, `constitution.adoc` or a
+  directory `NNN-slug` — three digits, a hyphen, lowercase words of letters
+  and digits joined by hyphens;
+* no two directories share a number;
+* every directory has `spec.adoc`;
+* the header of `spec.adoc` — the lines before the first empty one — has
+  `:status:` equal to `draft`, `implemented` or `dropped`, and `:issue:` with
+  the number of an issue;
+* an `implemented` specification has the section `== Results`.
+
+Each violation is printed as a line `specs/<path>: <what is wrong>`; the exit
+status is 1 if there is any. A pull request is checked merged with
+`develop`, so two branches that took the same number are caught on the
+second pull request.
+
+== Constitution
+
+A section "Specifications" is added after "Releases and versions":
+
+* The layout of `specs/` is the project's own, described in
+  `specs/README.adoc`. No external framework of spec-driven development —
+  OpenSpec, GSD, Spec Kit — is adopted: each brings Markdown among AsciiDoc
+  documents, directories and commands of its own and a release cycle the
+  project does not control. A description of the current behavior is
+  `README.md` and the texts of the widget, not specifications.
+* A specification does not copy what git and GitHub hold — whether the
+  change is merged or released, whether its issue is closed: such a fact
+  arrives after the last commit of the change and cannot be written in it.
+* The form of `specs/` is checked by `scripts/check-specs.sh` before a change
+  is proposed and in workflow `test`. The check sees the form, not the truth:
+  that a specification matches the code rests on its criteria (section
+  "Decisions rest on measurements").
+
+Section "Verifiability" names the check among what passes before a change is
+proposed and runs in workflow `test`; section "Stack and layout" names the
+script. The open question "SDD framework" is removed.
+
+== `specs/README.adoc`
+
+* The rule on `:status:` is rewritten: `spec.adoc` carries `:issue:` and
+  `:status:` — `draft` (nothing implemented), `implemented` (implemented, and
+  section "Results" says how each criterion is met) or `dropped` (abandoned,
+  and the specification says why); whether the change is merged or released
+  is told by git and GitHub, how it was measured — by "Results".
+* Section "Layout" says that the script checks the form of the directory and
+  lists what it checks.
+* "Relation to issues" gets a step: a pull request whose specification is not
+  yet `implemented` is opened as a draft and marked ready (`gh pr ready`) with
+  the commit that writes its results.
+
+== Existing specifications
+
+`:status:` of 001 becomes `implemented`. What its status said beyond that —
+v0.1.0 released 2026-10-01; K1–K5 met; K6 failed on v0.1.0 and is repeated
+on v0.1.1 — is in its section "Results" (K6) and in the tag `v0.1.0`.
+
+Specification 002 is a draft in a working copy, not in the repository, when
+this is written: this change takes 003, and 002 meets the check when it is
+committed — with the number of its issue, which the order of
+`specs/README.adoc` opens first.
+
+== Acceptance criteria
+
+[cols="1,6"]
+|===
+| # | Criterion and method
+
+| K1
+| `scripts/check-specs.sh` passes on the branch: the check of
+  specifications 001 and 003.
+
+| K2
+| The check is that of qws, where each violation of section "Behavior" was
+  shown to fail with its message (qws, specification 009, K2): `diff` with
+  qws's `scripts/check-specs.sh` shows only the specification its first
+  comment names.
+
+| K3
+| Workflow `test` on the pull request runs the check before the build, and
+  the step passes.
+
+| K4
+| `specs/constitution.adoc` has section "Specifications", "Verifiability"
+  and "Stack and layout" name the check, and the open question "SDD
+  framework" is gone; `specs/README.adoc` has the rules of section
+  "`specs/README.adoc`".
+
+| K5
+| The pull request is opened as a draft and marked ready with the commit
+  that writes section "Results".
+|===
+
+== Results
+
+2026-10-01, ws1 (Debian 12, bash 5.2.15), a local `debian:bookworm`
+container and GitHub Actions.
+
+[cols="1,6"]
+|===
+| # | How it is met
+
+| K1 | `scripts/check-specs.sh` at `9cebdf5` exits 0, on ws1 and in the
+  container. Before the status of 001 was rewritten, it named that status
+  and nothing else.
+| K2 | `diff` with `scripts/check-specs.sh` of qws at `f60f05d`: line 2
+  alone, `specs/009-spec-checks` against `specs/003-spec-checks`.
+| K3 | Workflow `test` on `9cebdf5`: run 36879566053 (push) and 36879571944
+  (pull request), step `specs` — the fifth, after the checkout and before
+  `build dependencies` — passed, then the build and `ctest`.
+| K4 | Sections "Specifications", "Verifiability" and "Stack and layout" of
+  the constitution; "Layout", "Relation to issues" and "Rules" of
+  `specs/README.adoc`.
+| K5 | Pull request #6 opened as a draft and marked ready after the commit
+  that writes this section.
+|===
+
+== Outside the specification
+
+* The other open questions of the constitution stay open.
+* Checking the links between documents and the paths the constitution names.

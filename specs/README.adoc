@@ -3,7 +3,7 @@
 :toc-title: Contents
 :toclevels: 2
 :sectnums:
-:revdate: 2026-09-30
+:revdate: 2026-10-01
 
 Spec-driven development: a change that will outlive a single sitting gets a
 written specification before any code is written. The point is not ceremony:
@@ -35,6 +35,22 @@ the weather and geolocation services, reference screenshots — lives in the
 same directory next to the documents when its size and content allow keeping
 it in the repository; otherwise the specification says where it is and how to
 reproduce it.
+
+The form of the directory is checked by `scripts/check-specs.sh` — locally
+before a change is proposed and in workflow `test` (specification
+`003-spec-checks`):
+
+* every entry of `specs/` is `README.adoc`, `constitution.adoc` or a
+  directory `NNN-slug` — three digits, a hyphen, lowercase words of letters
+  and digits joined by hyphens;
+* no two directories share a number;
+* every directory has `spec.adoc`, whose header — the lines before the first
+  empty one — has `:status:` of section "Rules" and `:issue:` with the number
+  of the issue;
+* an `implemented` specification has the section `== Results`.
+
+The check sees the form, not the truth: that a specification matches the code
+rests on its acceptance criteria.
 
 == Which documents a change needs
 
@@ -90,6 +106,12 @@ the pull request.
   round. If the work is large and the specification has to be approved before
   implementation starts, it goes out as a separate pull request from the same
   branch, and the code continues after it is merged.
+. A pull request whose specification is not yet `implemented` — its results
+  still to be written — is opened as a draft and marked ready (`gh pr ready`)
+  with the commit that writes them. Results often cite the checks of the pull
+  request itself, so they follow its opening; GitHub does not merge a draft,
+  and a green pull request whose specification still says `draft` does not
+  look ready.
 
 The `tasks.adoc` checklist is not duplicated in the issue. The list of steps
 lives either in the specification or in the issue, never in both: two copies
@@ -115,5 +137,14 @@ diverge by the third step.
   specification that has diverged from the implementation misleads more than
   its absence would.
 * The header of every document carries `:revdate:`, and `spec.adoc` also
-  carries `:status:`, which shows whether the change is implemented, whether it
-  has been measured, and what remains open.
+  carries `:issue:` and `:status:`. `:status:` holds one of three values and
+  nothing else, set in the same change set as what it describes:
+** `draft` — nothing is implemented yet;
+** `implemented` — the change is implemented, and section "Results" says how
+   each acceptance criterion is met;
+** `dropped` — the change was abandoned, and the specification says why.
+* Whether the change is merged or released, whether its issue is closed, is
+  told by git and GitHub, not by the specification: such a fact arrives after
+  the last commit of the change and cannot be written in it. How the change
+  was measured is told by "Results"; what remains open, by the list of open
+  decisions.
