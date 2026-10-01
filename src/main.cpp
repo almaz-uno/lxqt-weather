@@ -10,10 +10,12 @@
 #include <QCheckBox>
 #include <QGroupBox>
 #include <QFormLayout>
+#include <QLineEdit>
 #include <QDebug>
 #include <cstdio>
 
 #include "lxqtweatherwidget.h"
+#include "locationsetting.h"
 #include "version.h"
 
     // Simple settings simulation for testing
@@ -40,6 +42,10 @@ public:
         return mSettings.contains(key);
     }
 
+    void remove(const QString &key) override {
+        mSettings.remove(key);
+    }
+
 private:
     QMap<QString, QVariant> mSettings;
 };
@@ -49,7 +55,10 @@ class TestWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    TestWindow(QWidget *parent = nullptr) : QMainWindow(parent)
+    // location: the text of the "Location" field to apply at start
+    // (weather-test --location TEXT, specs/002-location-by-address)
+    explicit TestWindow(const QString &location = QString(), QWidget *parent = nullptr)
+        : QMainWindow(parent)
     {
         setupUI();
 
@@ -58,11 +67,34 @@ public:
 
         // Apply settings to widget
         mWeatherWidget->updateSettings(mSettings);
+
+        // The location setting, as in the settings dialog of the panel
+        mLocation = new LocationSetting(mSettings, this);
+        connect(mLocation, &LocationSetting::applied, this, [this]() {
+            mLocationResult->setText(LocationSetting::describe(mSettings));
+            qDebug() << "Location:" << LocationSetting::describe(mSettings);
+            mWeatherWidget->updateSettings(mSettings);
+        });
+        connect(mLocation, &LocationSetting::failed, this, [this](const QString &reason) {
+            mLocationResult->setText(QString("Location not saved: %1").arg(reason));
+            qWarning() << "Location not saved:" << reason;
+        });
+        mLocationResult->setText(LocationSetting::describe(mSettings));
+
+        if (!location.isEmpty()) {
+            mLocationEdit->setText(location);
+            onLocationEntered();
+        }
     }
 
 private slots:
     void onRefreshClicked() {
         mWeatherWidget->refreshWeather();
+    }
+
+    void onLocationEntered() {
+        mLocationResult->setText("Searching…");
+        mLocation->apply(mLocationEdit->text());
     }
 
     void onSettingsChanged() {
@@ -188,12 +220,36 @@ private:
                 this, &TestWindow::onSettingsChanged);
         settingsLayout->addRow(descLabel, mShowDescCheckBox);
 
+        // Location: applied on Enter or with the button, like OK in the panel
+        QLabel *locationLabel = new QLabel("Location:");
+        locationLabel->setStyleSheet(QString("font-size: %1px;").arg(labelFontSize));
+
+        mLocationEdit = new QLineEdit();
+        mLocationEdit->setPlaceholderText("Address or latitude, longitude");
+        mLocationEdit->setClearButtonEnabled(true);
+        mLocationEdit->setStyleSheet(QString("font-size: %1px;").arg(controlFontSize));
+        connect(mLocationEdit, &QLineEdit::returnPressed, this, &TestWindow::onLocationEntered);
+
+        QPushButton *locationButton = new QPushButton("Apply");
+        connect(locationButton, &QPushButton::clicked, this, &TestWindow::onLocationEntered);
+
+        QHBoxLayout *locationLayout = new QHBoxLayout();
+        locationLayout->addWidget(mLocationEdit);
+        locationLayout->addWidget(locationButton);
+        settingsLayout->addRow(locationLabel, locationLayout);
+
+        mLocationResult = new QLabel();
+        mLocationResult->setWordWrap(true);
+        mLocationResult->setStyleSheet(QString("color: #666; font-size: %1px;").arg(labelFontSize));
+        settingsLayout->addRow(QString(), mLocationResult);
+
         mainLayout->addWidget(settingsGroup);
 
         // Information
         QLabel *infoLabel = new QLabel(
             "Weather data provided by Open-Meteo.com (free, no API key required)\n"
-            "Location determined by IP geolocation service"
+            "Location: set above, or determined by your IP address\n"
+            "Addresses are found by Nominatim, © OpenStreetMap contributors"
         );
 
         // Apply DPI-aware font size to info label
@@ -217,6 +273,9 @@ private:
     QSpinBox *mIntervalSpinBox;
     QComboBox *mUnitComboBox;
     QCheckBox *mShowDescCheckBox;
+    QLineEdit *mLocationEdit;
+    QLabel *mLocationResult;
+    LocationSetting *mLocation;
 };
 
 int main(int argc, char *argv[])
@@ -235,7 +294,12 @@ int main(int argc, char *argv[])
     app.setApplicationVersion(LXQT_WEATHER_VERSION);
     app.setOrganizationName("LXQt");
 
-    TestWindow window;
+    QString location;
+    if (argc == 3 && qstrcmp(argv[1], "--location") == 0) {
+        location = QString::fromLocal8Bit(argv[2]);
+    }
+
+    TestWindow window(location);
     window.show();
 
     return app.exec();

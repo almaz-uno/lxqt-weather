@@ -17,19 +17,11 @@
 #include <QDateTime>
 #include <QVariant>
 
+#include "weathersettings.h"
+
 // Forward declarations
 class WeatherAPI;
 class GeoLocation;
-
-// Simple settings interface for the widget
-class IWeatherSettings
-{
-public:
-    virtual ~IWeatherSettings() = default;
-    virtual QVariant value(const QString &key, const QVariant &defaultValue = QVariant()) const = 0;
-    virtual void setValue(const QString &key, const QVariant &value) = 0;
-    virtual bool contains(const QString &key) const = 0;
-};
 
 class LXQtWeatherWidget : public QWidget
 {
@@ -91,6 +83,10 @@ private:
     double mCurrentLatitude;
     double mCurrentLongitude;
     bool mHasValidData;
+
+    // The location set in the settings, if any (specs/002-location-by-address)
+    bool mHasSetLocation;
+    bool mSettingsApplied;      // updateSettings() has run before
 };
 
 #endif // LXQTWEATHERWIDGET_H

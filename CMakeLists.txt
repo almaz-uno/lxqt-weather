@@ -33,6 +33,8 @@ add_custom_target(version
 add_library(weather SHARED
     src/weatherapi.cpp
     src/geolocation.cpp
+    src/geocoder.cpp
+    src/locationsetting.cpp
     src/lxqtweatherwidget.cpp
     src/lxqtweatherplugin.cpp
 )
@@ -68,6 +70,8 @@ add_executable(weather-test
     src/main.cpp
     src/weatherapi.cpp
     src/geolocation.cpp
+    src/geocoder.cpp
+    src/locationsetting.cpp
     src/lxqtweatherwidget.cpp
 )
 
@@ -96,6 +100,16 @@ target_link_libraries(relnotes_test PRIVATE relnotes-lib Qt5::Test)
 target_compile_definitions(relnotes_test PRIVATE
     RELEASE_NOTES="${CMAKE_SOURCE_DIR}/RELEASE-NOTES.adoc")
 add_test(NAME relnotes COMMAND relnotes_test)
+
+# The location setting and the geocoder, on recorded responses
+# (specs/002-location-by-address)
+add_executable(geocoder_test tests/geocoder_test.cpp src/geocoder.cpp src/locationsetting.cpp)
+target_link_libraries(geocoder_test PRIVATE Qt5::Core Qt5::Network Qt5::Test)
+target_include_directories(geocoder_test PRIVATE src ${VERSION_DIR})
+target_compile_definitions(geocoder_test PRIVATE
+    FIXTURES_DIR="${CMAKE_SOURCE_DIR}/tests")
+add_dependencies(geocoder_test version)
+add_test(NAME geocoder COMMAND geocoder_test)
 
 # Installation
 install(TARGETS weather LIBRARY DESTINATION /usr/lib/x86_64-linux-gnu/lxqt-panel)
