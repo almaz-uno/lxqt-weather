@@ -3,7 +3,7 @@
 :toc-title: Contents
 :sectnums:
 :revdate: 2026-10-01
-:status: draft
+:status: implemented
 :issue: 11
 
 == What and why
@@ -115,6 +115,28 @@ outside the widget, next to `.github/workflows/`.
 K2 can only be met after the merge: Dependabot reads its configuration from
 the default branch alone. Its result reaches `develop` by a pull request of
 its own from the same branch.
+
+== Results
+
+2026-10-01, ws1 (Debian 12, bash 5.2.15) and GitHub.
+
+[cols="1,6"]
+|===
+| # | How it is met
+
+| K1 | `check-jsonschema` 0.38.2 with the schema fetched on 2026-10-01 exits
+  0 at `198b3ad`; the file of qws with `interval: fortnightly` fails, so the
+  check is not vacuous.
+| K2 | After the merge, by a pull request of its own.
+| K3 | After `gh api -X PUT` of both on 2026-10-01: `vulnerability-alerts`
+  answers 204, `automated-security-fixes` answers
+  `{"enabled":true,"paused":false}`.
+| K4 | `scripts/check-specs.sh` at `198b3ad` exits 0. Workflow `test` on
+  `198b3ad`: run 36910387926 (push) and 36910397064 (pull request), step
+  `specs` passed, then the build and `ctest`.
+| K5 | Section "Stack and layout" of the constitution, the item after
+  `.github/workflows/`.
+|===
 
 == Open decisions
 
