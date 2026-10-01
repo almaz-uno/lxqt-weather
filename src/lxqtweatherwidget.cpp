@@ -1,6 +1,7 @@
 #include "lxqtweatherwidget.h"
 #include "weatherapi.h"
 #include "geolocation.h"
+#include "locationsetting.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -31,6 +32,8 @@ LXQtWeatherWidget::LXQtWeatherWidget(QWidget *parent)
     , mCurrentLatitude(0.0)
     , mCurrentLongitude(0.0)
     , mHasValidData(false)
+    , mHasSetLocation(false)
+    , mSettingsApplied(false)
 {
     setupUI();
     setupServices();
@@ -79,9 +82,37 @@ void LXQtWeatherWidget::updateSettings(IWeatherSettings *settings)
         mTemperatureLabel->setText(formatTemperature(mCurrentTemperature));
     }
 
+    // The location set in the settings replaces the one found by IP
+    const bool hadSetLocation = mHasSetLocation;
+    const double previousLatitude = mCurrentLatitude;
+    const double previousLongitude = mCurrentLongitude;
+    mHasSetLocation = LocationSetting::isSet(settings);
+    if (mHasSetLocation) {
+        mCurrentLatitude = settings->value(LOCATION_LATITUDE_KEY).toDouble();
+        mCurrentLongitude = settings->value(LOCATION_LONGITUDE_KEY).toDouble();
+        mCurrentCity = settings->value(LOCATION_NAME_KEY).toString();
+    } else if (hadSetLocation) {
+        // Back to IP: the name of the set place must not label the fallback
+        mCurrentCity.clear();
+        if (mWeatherAPI) {
+            mWeatherAPI->setCityName(QString());
+        }
+    }
+
+    // A changed location is shown at once; the first settings come with the
+    // widget, whose first refresh is already scheduled
+    const bool locationChanged = mHasSetLocation != hadSetLocation
+        || (mHasSetLocation && (mCurrentLatitude != previousLatitude
+                                || mCurrentLongitude != previousLongitude));
+    if (mSettingsApplied && locationChanged) {
+        refreshWeather();
+    }
+    mSettingsApplied = true;
+
     qDebug() << "Settings updated: interval =" << mUpdateInterval
              << "min, unit =" << mTemperatureUnit
-             << ", show desc =" << mShowDescription;
+             << ", show desc =" << mShowDescription
+             << ", location =" << (mHasSetLocation ? mCurrentCity : QStringLiteral("by IP"));
 }
 
 void LXQtWeatherWidget::refreshWeather()
@@ -92,6 +123,14 @@ void LXQtWeatherWidget::refreshWeather()
     }
 
     qDebug() << "Refreshing weather data...";
+
+    // A location set in the settings needs no geolocation: nothing goes to
+    // ip-api.com (specs/002-location-by-address)
+    if (mHasSetLocation) {
+        mWeatherAPI->setCityName(mCurrentCity);
+        mWeatherAPI->requestWeatherByCoordinates(mCurrentLatitude, mCurrentLongitude);
+        return;
+    }
 
     // Request geolocation, which will then request weather data
     mGeoLocation->requestLocation();
@@ -485,7 +524,8 @@ void LXQtWeatherWidget::updateTooltip(const QJsonObject &data)
     }
 
     tooltipText += "\nLast updated: " + QDateTime::currentDateTime().toString("hh:mm:ss");
-    tooltipText += "\nLeft click: refresh weather + location";
+    tooltipText += mHasSetLocation ? "\nLeft click: refresh weather"
+                                   : "\nLeft click: refresh weather + location";
     tooltipText += "\nMiddle click: open Yandex weather map";
 
     setToolTip(tooltipText);

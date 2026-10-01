@@ -88,6 +88,11 @@ Documentation describing behavior:
 ** `src/weatherapi.{h,cpp}` — the Open-Meteo client, retries, the mapping of
    WMO weather codes to descriptions and icon codes;
 ** `src/geolocation.{h,cpp}` — location by IP address;
+** `src/geocoder.{h,cpp}` — an address searched at a Nominatim-compatible
+   geocoder, coordinates written as text;
+** `src/locationsetting.{h,cpp}` — the "Location" setting: its keys and how
+   the text of the field is applied (specification `002-location-by-address`);
+** `src/weathersettings.h` — `IWeatherSettings`, the settings interface;
 ** `data/weather.desktop` — the plugin description for the panel.
 * Outside the widget, neither built into the plugin nor installed:
 ** `cmake/version.cmake` — the version of a build, written by target
@@ -101,7 +106,7 @@ Documentation describing behavior:
    versions").
 * LXQt headers are included only by `src/lxqtweatherplugin.h`. The widget
   receives its settings through the `IWeatherSettings` interface
-  (`src/lxqtweatherwidget.h`), implemented by `PluginSettingsAdapter` in the
+  (`src/weathersettings.h`), implemented by `PluginSettingsAdapter` in the
   plugin and by `MockPluginSettings` in `weather-test`. This boundary is what
   lets `weather-test` build and run without the panel; a change that needs
   LXQt beyond the plugin files says so in its specification.
@@ -135,7 +140,16 @@ Documentation describing behavior:
    5 to 120 in the dialog, default 30;
 ** `temperature_unit` — `celsius` or `fahrenheit`, default `celsius`;
 ** `show_description` — whether the weather description is shown under the
-   temperature, default `true`.
+   temperature, default `true`;
+** `location` — the text of the "Location" field as entered: an address or
+   coordinates; absent — the location is found by IP;
+** `location_latitude`, `location_longitude`, `location_name` — the place the
+   text stands for, written when the dialog is accepted; the widget uses
+   these, the text only refills the field. The four keys are written and
+   removed together (`LocationSetting`);
+** `geocoder_url` — the Nominatim-compatible geocoder, default
+   `https://nominatim.openstreetmap.org`; not in the dialog, set by hand when
+   the service has to change (specification `002-location-by-address`).
 * The plugin constructor writes a missing key with its default. The defaults
   are repeated in four places — the `LXQtWeatherPlugin` constructor,
   `LXQtWeatherPlugin::configureDialog`, `LXQtWeatherWidget` (member
@@ -157,14 +171,20 @@ The widget depends on services it does not control, and which service it
 talks to, and what it sends, is behavior the user can see:
 
 * location — `http://ip-api.com/json/`, by the public IP address of the
-  request; when it fails, the widget falls back to Moscow (55.7558, 37.6176),
-  hard-coded in `LXQtWeatherWidget::setupServices`;
+  request, only when no location is set in the settings; when it fails, the
+  widget falls back to Moscow (55.7558, 37.6176), hard-coded in
+  `LXQtWeatherWidget::setupServices`;
+* the search of an address — Nominatim of OpenStreetMap,
+  `https://nominatim.openstreetmap.org/search` (key `geocoder_url`), once per
+  OK of the settings dialog and never as the text is typed, as its usage
+  policy requires; the data are attributed to OpenStreetMap in the dialog and
+  in `README.md`;
 * weather — `http://api.open-meteo.com/v1/forecast`, the `current_weather`
   block, by coordinates;
 * the weather map — `https://yandex.ru/pogoda/maps/nowcast?lat=…&lon=…`,
   opened in the default browser on a middle click.
 
-None of them needs registration or a key. Both requests send the User-Agent
+None of them needs registration or a key. Every request sends the User-Agent
 `lxqt-weather/<version>` (specification `001-releases`). A change of a
 service, an endpoint, or of what is sent to it goes through a specification
 and updates `README.md`, the tooltip and the "Information" group of the
@@ -292,11 +312,13 @@ specification, after which the corresponding section appears above.
   mention the middle click. Fixed by a documentation change.
 * *Non-English comments* — two comments in `LXQtWeatherWidget::sizeHint` are in
   Russian, contrary to section "Language".
-* *Location data* — the widget sends the user's public IP address to
-  ip-api.com and the coordinates to Open-Meteo, both over plain HTTP (the free
-  ip-api.com endpoint has no HTTPS), and logs the coordinates, the city and
-  the request URL. There is no rule yet on the transport or on logging the
-  location.
+* *Location data* — without a location set, the widget sends the user's
+  public IP address to ip-api.com; it sends the coordinates to Open-Meteo,
+  both over plain HTTP (the free ip-api.com endpoint has no HTTPS), and logs
+  the coordinates, the city and the request URL. An address set in the
+  settings goes to Nominatim once, over HTTPS, and is stored in the panel
+  configuration (specification `002-location-by-address`). There is no rule
+  yet on the transport or on logging the location.
 * *Target platforms* — the install destination of the plugin is the Debian
   multiarch path for amd64, while `install.sh` and `README.md` also offer
   pacman and dnf, whose distributions keep panel plugins elsewhere. The code

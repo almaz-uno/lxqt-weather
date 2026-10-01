@@ -1,5 +1,6 @@
 #include "lxqtweatherplugin.h"
 #include "lxqtweatherwidget.h"
+#include "locationsetting.h"
 #include "version.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -32,6 +33,12 @@ public:
 
     bool contains(const QString &key) const override {
         return mSettings ? mSettings->contains(key) : false;
+    }
+
+    void remove(const QString &key) override {
+        if (mSettings) {
+            mSettings->remove(key);
+        }
     }
 
 private:
@@ -141,6 +148,26 @@ QDialog* LXQtWeatherPlugin::configureDialog()
     descLabel->setStyleSheet(QString("font-size: %1px;").arg(labelFontSize));
     generalLayout->addRow(descLabel, showDescriptionCheckBox);
 
+    // Location: an address, coordinates, or empty for the location by IP
+    // (specs/002-location-by-address); the line under it says what is stored
+    PluginSettingsAdapter *adapter = new PluginSettingsAdapter(settings());
+    QObject::connect(dialog, &QObject::destroyed, [adapter]() { delete adapter; });
+    LocationSetting *location = new LocationSetting(adapter, dialog);
+
+    QLineEdit *locationEdit = new QLineEdit(settings()->value(LOCATION_KEY).toString());
+    locationEdit->setPlaceholderText("Address or latitude, longitude");
+    locationEdit->setClearButtonEnabled(true);
+    locationEdit->setStyleSheet(QString("font-size: %1px;").arg(controlFontSize));
+
+    QLabel *locationLabel = new QLabel("Location:");
+    locationLabel->setStyleSheet(QString("font-size: %1px;").arg(labelFontSize));
+    generalLayout->addRow(locationLabel, locationEdit);
+
+    QLabel *locationResult = new QLabel(LocationSetting::describe(adapter));
+    locationResult->setWordWrap(true);
+    locationResult->setStyleSheet(QString("color: #666; font-size: %1px;").arg(labelFontSize));
+    generalLayout->addRow(QString(), locationResult);
+
     mainLayout->addWidget(generalGroup);
 
     // Information group
@@ -153,8 +180,9 @@ QDialog* LXQtWeatherPlugin::configureDialog()
     QLabel *infoLabel = new QLabel(
         "Weather data provided by Open-Meteo.com\n"
         "Open-Meteo is a free weather API that doesn't require registration.\n"
-        "Location is determined automatically using your IP address.\n"
-        "Location updates automatically when network changes (VPN, etc.).\n"
+        "Without a location set, it is determined by your IP address\n"
+        "and updates when the network changes (VPN, etc.).\n"
+        "Addresses are found by Nominatim, © OpenStreetMap contributors.\n"
         "\n"
         "lxqt-weather " LXQT_WEATHER_VERSION
     );
@@ -178,17 +206,27 @@ QDialog* LXQtWeatherPlugin::configureDialog()
     int buttonFontSize = qMax(9, qRound(11 * scaleFactor));
     buttonBox->setStyleSheet(QString("QPushButton { font-size: %1px; }").arg(buttonFontSize));
 
+    // The location is applied last: a search keeps the dialog open until it
+    // ends, and a failed one leaves the dialog open with the reason
+    QPushButton *okButton = buttonBox->button(QDialogButtonBox::Ok);
+    QObject::connect(location, &LocationSetting::applied, [=]() {
+        mWidget->updateSettings(adapter);
+        dialog->accept();
+    });
+    QObject::connect(location, &LocationSetting::failed, [=](const QString &reason) {
+        locationResult->setText(QString("Location not saved: %1").arg(reason));
+        okButton->setEnabled(true);
+    });
+
     QObject::connect(buttonBox, &QDialogButtonBox::accepted, [=]() {
         // Save settings
         settings()->setValue("update_interval", updateIntervalSpinBox->value());
         settings()->setValue("temperature_unit", temperatureUnitComboBox->currentData().toString());
         settings()->setValue("show_description", showDescriptionCheckBox->isChecked());
 
-        // Update widget using adapter
-        PluginSettingsAdapter adapter(settings());
-        mWidget->updateSettings(&adapter);
-
-        dialog->accept();
+        okButton->setEnabled(false);
+        locationResult->setText("Searching…");
+        location->apply(locationEdit->text());
     });
 
     QObject::connect(buttonBox, &QDialogButtonBox::rejected, dialog, &QDialog::reject);

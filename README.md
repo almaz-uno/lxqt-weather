@@ -6,7 +6,7 @@ A weather widget for LXQt panel with visualization of weather conditions and tem
 
 ## ✨ Key Features
 
-- **Automatic location detection** via IP address
+- **Location** set by an address or coordinates, or detected by IP address
 - **Temperature display** in Celsius or Fahrenheit
 - **Weather icons** for various conditions (clear, cloudy, rain, snow, fog, storm)
 - **Weather description** (optional)
@@ -24,7 +24,7 @@ The widget uses **[Open-Meteo.com](https://open-meteo.com/)** - a free weather A
 - ✅ **Free usage** - no request limits
 - ✅ **Environmentally friendly** - runs on 100% renewable energy
 
-Geolocation is determined via **ip-api.com** with fallback to Moscow.
+A location set in the settings is found once via **Nominatim** (OpenStreetMap); without one, geolocation is determined via **ip-api.com** with fallback to Moscow.
 
 ## 📋 Requirements
 
@@ -128,6 +128,9 @@ weather-test
 
 # The version of the build, without a display
 weather-test --version
+
+# With the "Location" field filled and applied at start
+weather-test --location "Технопарк Сколково"
 ```
 
 The test application allows you to:
@@ -156,9 +159,33 @@ The widget doesn't require API key configuration. Main settings are available th
 - **Update Interval**: 5-120 minutes (default: 30 minutes)
 - **Temperature Unit**: Celsius/Fahrenheit (default: Celsius)
 - **Show Description**: Yes/No (default: Yes)
+- **Location**: an address, coordinates, or empty (default: empty)
+
+### Location:
+- **Empty** — the location is found by your IP address (ip-api.com). Behind a
+  VPN that is the VPN's exit.
+- **An address** — searched once, when you press OK, in
+  [Nominatim](https://nominatim.openstreetmap.org/) (OpenStreetMap). The place
+  found is shown under the field, and its coordinates are stored; nothing is sent
+  to ip-api.com afterwards. If the address is not found, the dialog stays open
+  with the reason. Check the place shown: for an address OpenStreetMap does not
+  know, Nominatim may find only the street. A name often works better than a
+  house number — `Технопарк Сколково` rather than `Большой бульвар 42с1`.
+- **Coordinates** — latitude and longitude in decimal degrees, separated by a
+  comma or spaces: `55.6928, 37.3475`. Used as they are, with no search.
+
+The settings are kept in the panel configuration, `~/.config/lxqt/panel.conf`,
+in the plugin's section: `location`, `location_latitude`, `location_longitude`,
+`location_name`. The key `geocoder_url` (default
+`https://nominatim.openstreetmap.org`) points the search at another
+Nominatim-compatible service, without a new build.
+
+Addresses are found by Nominatim, © OpenStreetMap contributors, data under the
+[ODbL](https://www.openstreetmap.org/copyright).
 
 ### Fallback Location:
-If automatic location detection is impossible, Moscow (55.7558°N, 37.6176°E) is used.
+If the location is not set and cannot be found by the IP address, Moscow
+(55.7558°N, 37.6176°E) is used.
 
 ## 🎯 Usage
 
@@ -205,6 +232,9 @@ If automatic location detection is impossible, Moscow (55.7558°N, 37.6176°E) i
 │   ├── lxqtweatherwidget.{h,cpp}    # UI widget
 │   ├── weatherapi.{h,cpp}           # Open-Meteo API client
 │   ├── geolocation.{h,cpp}          # Geolocation service
+│   ├── geocoder.{h,cpp}             # Address search (Nominatim)
+│   ├── locationsetting.{h,cpp}      # The "Location" setting
+│   ├── weathersettings.h            # Settings interface
 │   ├── main.cpp                     # Test application
 │   └── resources.qrc                # Qt resources
 ├── data/
@@ -225,6 +255,7 @@ If automatic location detection is impossible, Moscow (55.7558°N, 37.6176°E) i
 - **LXQtWeatherWidget**: Main UI widget
 - **WeatherAPI**: HTTP client for Open-Meteo API
 - **GeoLocation**: IP-based location detection
+- **LocationSetting**, **Geocoder**: the location set by an address or coordinates
 
 ## 📝 License
 
@@ -242,4 +273,4 @@ What each version changed: [RELEASE-NOTES.adoc](RELEASE-NOTES.adoc).
 
 ---
 
-**Note**: Weather data provided by [Open-Meteo.com](https://open-meteo.com/). Geolocation determined via [ip-api.com](http://ip-api.com/). 
+**Note**: Weather data provided by [Open-Meteo.com](https://open-meteo.com/). Addresses found by [Nominatim](https://nominatim.openstreetmap.org/), © OpenStreetMap contributors. Geolocation determined via [ip-api.com](http://ip-api.com/). 

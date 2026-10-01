@@ -11,6 +11,28 @@ bottom of the widget's settings dialog. Release packages are built on
 Debian 12 for amd64 and need its LXQt 1.2 panel and Qt 5.15: `sudo apt install
 ./lxqt-weather_X.Y.Z_amd64.deb`, then restart the panel.
 
+== 0.2.0 — 2026-10-01
+
+The location by address (link:specs/002-location-by-address/spec.adoc[specification
+002]). Behind a VPN the location by IP address is the VPN's exit; now the
+place is set once, in the settings.
+
+* The settings dialog has a field "Location": an address, coordinates such as
+  `55.6928, 37.3475`, or nothing. An address is searched once, when the dialog
+  is accepted, in Nominatim (OpenStreetMap); the place found is shown under
+  the field, and its coordinates are stored. Not found — the dialog stays open
+  with the reason, and nothing changes.
+* With a location set, nothing goes to ip-api.com: the weather, the tooltip
+  and the middle-click map use the stored place. An empty field keeps the
+  location by IP address, as before, and existing settings are not touched.
+* Check the place shown under the field: for an address OpenStreetMap does
+  not know, Nominatim may find only the street. A name often works better
+  than a house number — `Технопарк Сколково` rather than `Большой бульвар
+  42с1`.
+* `geocoder_url` in the panel configuration points the search at another
+  Nominatim-compatible service. `weather-test --location <text>` fills the
+  field and applies it at start.
+
 == 0.1.0 — 2026-10-01
 
 The first release: a weather widget for the LXQt panel, with the behavior
