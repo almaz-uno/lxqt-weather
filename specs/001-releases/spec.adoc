@@ -3,7 +3,7 @@
 :toc-title: Contents
 :sectnums:
 :revdate: 2026-10-01
-:status: implemented; K1, K3, K4 and K5 met, K2 in part (section "Results"); the rest of K2 and K6 after the tag v0.1.0, which the author sets once the pull request is merged
+:status: implemented; v0.1.0 released 2026-10-01; K1–K5 met; K6 failed on v0.1.0 — the settings dialog clipped the version line (issue #3) — and is repeated on v0.1.1 (section "Results")
 :issue: 1
 
 == What and why
@@ -199,8 +199,10 @@ author may overturn any of them.
 | K1 | `relnotes_test`: `extractNotes`, `extractLevels` (four rows),
   `markdownTranslation` — passed under `ctest`.
 | K2 | ws1: no tag and `v0.1` — the usage, exit code 2; `v9.9.9` — "v9.9.9 is
-  not an annotated tag", exit code 1; no worktree was made. An unpushed tag
-  and an existing release — with `v0.1.0`.
+  not an annotated tag", exit code 1; `v0.1.0` before its push — "tag
+  v0.1.0 is not pushed to origin: git push origin v0.1.0", after its release
+  — "release v0.1.0 exists; to replace it: gh release delete v0.1.0", exit
+  code 1 both; no worktree was made.
 | K3 | ws1: `weather-test --version` — `lxqt-weather d9515ac-dirty`, equal to
   `git describe --tags --always --dirty`; a second `cmake --build` compiles
   and links nothing. `strace` of `weather-test` (`QT_QPA_PLATFORM=offscreen`):
@@ -229,6 +231,26 @@ author may overturn any of them.
   in the scripts. GitHub: workflow `test` passed for the push of the branch
   (run 36778741574) and for pull request #2 (run 36778741534), about 70 s
   each; Qt 5.15.8, LXQt 1.2.0, the same ten warnings, `ctest` passed.
+| K6 | Pull request #2 merged as `9421929`, the tag `v0.1.0` set on it.
+  Workflow `release`, run 36824027134 on the push of the tag: `test / test`
+  06:17:55–06:18:55 UTC, `release` 06:18:57–06:21:40 — after it. Release
+  "lxqt-weather 0.1.0": `lxqt-weather_0.1.0_amd64.deb` (114 246 bytes) and
+  `SHA256SUMS`; the downloaded package passes `sha256sum -c`, `dpkg-deb -f`
+  gives `Version: 0.1.0` and the `Depends` of K4; its `weather-test
+  --version` prints `lxqt-weather v0.1.0`, and its `libweather.so` carries
+  `lxqt-weather v0.1.0` and `lxqt-weather/v0.1.0`. The text is the chapter
+  0.1.0, its link leads to `…/blob/v0.1.0/specs/001-releases/spec.adoc`.
+  Installed by the author on ws1 at 09:32:36: `dpkg -S` gives
+  `lxqt-weather` for the three files, `dpkg --verify` is clean, and each
+  file equals the one of the release; `lxqt-panel`, restarted at 09:32:38,
+  maps the installed `libweather.so` (the same inode). The settings dialog
+  showed no version line: its fixed minimum size, 400×300 scaled by DPI —
+  450×338 at 108 dpi — kept the dialog below the 368 px its content needs,
+  and the information label got 77 px of 97, losing the last two lines
+  (issue #3). Fixed in 0.1.1: the dialog opens at its size hint, no smaller
+  than that default, and the layout sets the minimum; the dialog code built
+  outside the panel gives the label exactly the height it needs at 96, 108,
+  144 and 192 dpi. K6 is repeated on v0.1.1.
 |===
 
 == Outside the specification
