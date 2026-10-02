@@ -9,9 +9,9 @@ A weather widget for LXQt panel with visualization of weather conditions and tem
 - **Location** set by an address or coordinates, or detected by IP address
 - **Temperature display** in Celsius or Fahrenheit
 - **Weather icons** for various conditions (clear, cloudy, rain, snow, fog, storm)
-- **Weather description** (optional)
+- **Humidity and pressure** under the temperature (optional), pressure in mmHg
 - **Configurable update interval** (5-120 minutes)
-- **Tooltip with detailed information** (humidity, pressure, wind)
+- **Tooltip with detailed information** (humidity, pressure, wind in m/s, conditions)
 - **Click to refresh** data
 - **Free API** - no registration or API keys required
 
@@ -135,7 +135,7 @@ weather-test --location "Технопарк Сколково"
 
 The test application allows you to:
 - View the weather widget in a separate window
-- Configure parameters (update interval, temperature units, show description)
+- Configure parameters (update interval, temperature units, humidity and pressure, location)
 - Manually refresh data with the "Refresh" button
 - Debug network connectivity issues
 
@@ -158,7 +158,7 @@ The widget doesn't require API key configuration. Main settings are available th
 ### Available Parameters:
 - **Update Interval**: 5-120 minutes (default: 30 minutes)
 - **Temperature Unit**: Celsius/Fahrenheit (default: Celsius)
-- **Show Description**: Yes/No (default: Yes)
+- **Show Humidity and Pressure**: Yes/No (default: Yes) — the line under the temperature, `61% · 756 mmHg`: the relative humidity and the pressure at the surface in millimetres of mercury. The weather conditions are shown by the glyph and in the tooltip
 - **Location**: an address, coordinates, or empty (default: empty)
 
 ### Location:
@@ -235,6 +235,7 @@ If the location is not set and cannot be found by the IP address, Moscow
 │   ├── geocoder.{h,cpp}             # Address search (Nominatim)
 │   ├── locationsetting.{h,cpp}      # The "Location" setting
 │   ├── weathersettings.h            # Settings interface
+│   ├── weatherformat.{h,cpp}        # Humidity and pressure as shown
 │   ├── main.cpp                     # Test application
 │   └── resources.qrc                # Qt resources
 ├── data/

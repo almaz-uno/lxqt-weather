@@ -11,6 +11,28 @@ bottom of the widget's settings dialog. Release packages are built on
 Debian 12 for amd64 and need its LXQt 1.2 panel and Qt 5.15: `sudo apt install
 ./lxqt-weather_X.Y.Z_amd64.deb`, then restart the panel.
 
+== 0.3.0 — 2026-10-02
+
+Humidity and pressure (link:specs/005-humidity-pressure/spec.adoc[specification
+005]).
+
+* The line under the temperature shows the relative humidity and the pressure
+  at the surface in millimetres of mercury, `61% · 756 mmHg`, instead of the
+  weather description; the description stays in the tooltip, and the glyph
+  shows the conditions. The setting that switched the description line,
+  "Show Weather Description", is now "Show Humidity and Pressure" and switches
+  the new line: where the old line was off, the new one is off too.
+* The tooltip shows the humidity and the pressure — README promised them from
+  the start, but the weather block the widget used had neither.
+
+Fixed::
+* The tooltip gave the wind in km/h labelled m/s — 3.6 times the real speed.
+  It is in m/s now.
+
+The widget asks Open-Meteo for the block `current` with the six values it
+shows, instead of `current_weather` with forecasts it did not use: the answer
+is about ten times smaller.
+
 == 0.2.0 — 2026-10-01
 
 The location by address (link:specs/002-location-by-address/spec.adoc[specification

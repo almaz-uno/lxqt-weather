@@ -1,0 +1,151 @@
+= 005 — humidity and pressure
+:toc: left
+:toc-title: Contents
+:sectnums:
+:revdate: 2026-10-02
+:status: implemented
+:issue: 14
+
+== What and why
+
+The author wants the humidity and the pressure on the panel (2026-10-02). The
+widget asks Open-Meteo for the block `current_weather`, which has neither: the
+code sets both to zero, and the tooltip, which hides zeros, never shows its
+"Humidity" and "Pressure" lines. `README.md` promises both since the first
+commit (constitution, open question "`README.md` diverges from the code").
+
+Under the temperature the panel shows the weather description, "Overcast";
+the author finds it redundant next to the weather glyph and wants the humidity
+and the pressure there instead, the description kept in the tooltip.
+
+On the way: `current_weather` gives the wind in km/h, and the tooltip labels
+the number as m/s — 3.6 times the real speed (research, R2).
+
+Unchanged: the location, its setting and its sources; the weather glyph and
+the temperature; the update triggers; the middle-click map; the User-Agent.
+
+== Behavior
+
+. *The request* to Open-Meteo asks for the block `current` with
+  `temperature_2m`, `relative_humidity_2m`, `surface_pressure`,
+  `weather_code`, `wind_speed_10m`, `wind_direction_10m`, and
+  `wind_speed_unit=ms`, instead of `current_weather`; the blocks `hourly` and
+  `daily`, requested and never used, are dropped.
+. *The line under the temperature* shows the relative humidity and the
+  pressure at the surface in millimetres of mercury: `61% · 756 mmHg`. The
+  description of the weather leaves the panel. The messages of a failed
+  update — "Network timeout", "No connection", "Update failed" — keep this
+  line, as now.
+. *The tooltip*: `Humidity: 61%`, `Pressure: 756 mmHg`, `Wind: 2.7 m/s` — the
+  speed in metres per second at last — and `Conditions:` with the
+  description, as now.
+. *The pressure* is the surface pressure, as Yandex Weather shows it — the
+  map of the middle click — converted at 1 mmHg = 133.322387415 Pa and
+  rounded to a whole millimetre.
+. *The setting* `show_description` keeps its key and its default (`true`)
+  and now switches the line of humidity and pressure; the dialogs call it
+  "Show Humidity and Pressure". A panel where the line was switched off keeps
+  it off.
+
+== Choices made for the author
+
+. *The surface pressure in mmHg*, not the sea-level pressure in hPa: it is
+  what the weather services in Russian give, Yandex Weather among them, and
+  what a barometer at the place reads. At Skolkovo, 188 m above the sea, the
+  two differ by about 23 hPa (research, R1).
+. *The key `show_description` reinterpreted rather than renamed.* A new key
+  would be absent from every panel configuration, and `PluginSettings` would
+  take its default — the line switched off by a user would come back on.
+
+== Existing installations
+
+No key is added, removed or renamed; `show_description` is reinterpreted (see
+the choice above): it now switches the line of humidity and pressure, the line
+of the description being gone. The location keys of specification 002 are
+untouched. Version 0.3.0: new behavior.
+
+== Constitution
+
+* "Settings and user data": `show_description` — the line of humidity and
+  pressure under the temperature.
+* "External services": the weather — the block `current`, the wind in m/s.
+* The open question "`README.md` diverges from the code": the humidity and
+  the pressure are no longer among the divergences.
+
+== Acceptance criteria
+
+[cols="1,6"]
+|===
+| # | Criterion and method
+
+| K1
+| Test `weather_test` under `ctest`, without the network: the recorded
+  response of research R1 gives the temperature, the humidity, the surface
+  pressure, the code and the wind in m/s; a response without `current` and a
+  malformed one — an error; the conversion — 1007.3 hPa gives 756 mmHg,
+  1013.25 hPa gives 760 mmHg; the line — `61% · 756 mmHg`; the request URL
+  asks for `current` with the six variables and `wind_speed_unit=ms`, and for
+  neither `current_weather`, `hourly` nor `daily`.
+
+| K2
+| ws1, `weather-test` under `strace`: the request of K1 goes out; the line
+  under the temperature and the tooltip carry the humidity, the pressure and
+  the wind of the response it gets.
+
+| K3
+| The answer of Open-Meteo and the request on the wire are smaller: the
+  response to the old request and to the new one, measured with `curl` on
+  the same coordinates.
+
+| K4
+| Build with no new warnings; `scripts/check-specs.sh` and workflow `test`
+  pass.
+
+| K5
+| Release 0.3.0 installed on ws1, ws2 and ws3: the panel shows the humidity
+  and the pressure under the temperature; the tooltip, the description and
+  the wind — checked by the author.
+|===
+
+== Results
+
+2026-10-02, ws1 (Debian 12) and a local `debian:bookworm` container.
+
+[cols="1,6"]
+|===
+| # | How it is met
+
+| K1 | `weather_test` under `ctest`, 11 checks passed: the recorded response
+  of R1 — 11.7 °C, 61 %, 1007.3 hPa, code 3 "Overcast" with the icon code
+  `04d`, the wind 2.69 m/s from 312°; a response without `current` and a
+  truncated one — their errors; 1013.25 hPa — 760.00 mmHg, 1007.3 — "756
+  mmHg", none — empty; the line in four rows — `61% · 756 mmHg`, `61%`,
+  `756 mmHg`, empty; the request URL — host, path, coordinates, the six
+  variables of `current`, `wind_speed_unit=ms`, and none of
+  `current_weather`, `hourly`, `daily`.
+| K2 | `weather-test --location "55.6928, 37.3475"` under `strace`,
+  `QT_QPA_PLATFORM=offscreen`, 16:03 MSK: `GET /v1/forecast?…&current=
+  temperature_2m,relative_humidity_2m,surface_pressure,weather_code,
+  wind_speed_10m,wind_direction_10m&wind_speed_unit=ms&timezone=auto`; the
+  line under the temperature — "62% · 755 mmHg"; the tooltip — "Humidity:
+  62%", "Pressure: 755 mmHg", "Wind: 2.6 m/s", "Conditions: Overcast". The
+  same request with `curl` at 16:04, within the same 15-minute interval of
+  Open-Meteo: 62 %, 1007.2 hPa (755.46 mmHg), 2.62 m/s, 11.6 °C.
+| K3 | Research R3: 5847 bytes for the request of 0.2.0, 580 for the new one
+  — ten times smaller.
+| K4 | ws1 and the container: the only warnings are the ten
+  `QNetworkConfigurationManager` deprecations; `scripts/check-specs.sh`
+  passes; `ctest` — three tests. Workflow `test` on GitHub: the push of the
+  branch (run 37010968053) and pull request #15 (run 37010974245), about a
+  minute each.
+| K5 | After the release 0.3.0.
+|===
+
+== Open questions
+
+* Units of the pressure as a setting (hPa) — not asked for.
+
+== Outside the specification
+
+* Other variables of Open-Meteo (apparent temperature, precipitation, gusts).
+* The forecast for the coming hours or days.

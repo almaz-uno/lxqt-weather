@@ -2,6 +2,7 @@
 #include "weatherapi.h"
 #include "geolocation.h"
 #include "locationsetting.h"
+#include "weatherformat.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -190,18 +191,21 @@ void LXQtWeatherWidget::onWeatherDataReceived(const QJsonObject &data)
     mCurrentTemperature = main["temp"].toDouble();
     QString description = weatherInfo["description"].toString();
     QString iconCode = weatherInfo["icon"].toString();
+    // The line under the temperature: humidity and pressure; the description
+    // stays in the tooltip, the glyph shows it (specs/005-humidity-pressure)
+    const QString details = formatDetails(main["humidity"].toInt(), main["pressure"].toDouble());
 
     // IMPORTANT: First set the data validity flag
     mHasValidData = true;
 
     // Then update the UI
-    updateDisplay(description, iconCode);
+    updateDisplay(details, iconCode);
 
     // Update tooltip with detailed information
     updateTooltip(data);
 
     qDebug() << "Weather updated: temp =" << mCurrentTemperature
-             << "°C, desc =" << description;
+             << "°C, desc =" << description << ", details =" << details;
 }
 
 void LXQtWeatherWidget::onLocationReceived(double latitude, double longitude)
@@ -313,7 +317,7 @@ void LXQtWeatherWidget::setupUI()
     mTemperatureLabel->setStyleSheet(QString("font-weight: bold; font-size: %1px;").arg(tempFontSize));
     textLayout->addWidget(mTemperatureLabel);
 
-    // Weather description
+    // Humidity and pressure (specs/005-humidity-pressure)
     mDescriptionLabel = new QLabel("");
     mDescriptionLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     mDescriptionLabel->setStyleSheet(QString("font-size: %1px; color: #666;").arg(descFontSize));
@@ -387,7 +391,7 @@ void LXQtWeatherWidget::setupServices()
     qDebug() << "Network monitoring enabled";
 }
 
-void LXQtWeatherWidget::updateDisplay(const QString &description, const QString &iconCode)
+void LXQtWeatherWidget::updateDisplay(const QString &details, const QString &iconCode)
 {
     if (!mHasValidData) return;
 
@@ -396,9 +400,9 @@ void LXQtWeatherWidget::updateDisplay(const QString &description, const QString 
         mTemperatureLabel->setText(formatTemperature(mCurrentTemperature));
     }
 
-    // Update weather description
-    if (mDescriptionLabel && !description.isEmpty()) {
-        mDescriptionLabel->setText(description);
+    // Update humidity and pressure; also replaces a message of a failed update
+    if (mDescriptionLabel) {
+        mDescriptionLabel->setText(details);
         mDescriptionLabel->setVisible(mShowDescription);
     }
 
@@ -410,7 +414,7 @@ void LXQtWeatherWidget::updateDisplay(const QString &description, const QString 
     update(); // Redraw widget (removes "Loading...")
 
     qDebug() << "UI updated: temp =" << formatTemperature(mCurrentTemperature)
-             << ", desc =" << description << ", icon =" << iconCode;
+             << ", details =" << details << ", icon =" << iconCode;
 }
 
 QString LXQtWeatherWidget::formatTemperature(double temperature) const
@@ -500,11 +504,11 @@ void LXQtWeatherWidget::updateTooltip(const QJsonObject &data)
         tooltipText += "Temperature: " + formatTemperature(main["temp"].toDouble()) + "\n";
 
         if (main.contains("humidity") && main["humidity"].toInt() > 0) {
-            tooltipText += "Humidity: " + QString::number(main["humidity"].toInt()) + "%\n";
+            tooltipText += "Humidity: " + formatHumidity(main["humidity"].toInt()) + "\n";
         }
 
-        if (main.contains("pressure") && main["pressure"].toInt() > 0) {
-            tooltipText += "Pressure: " + QString::number(main["pressure"].toInt()) + " hPa\n";
+        if (main.contains("pressure") && main["pressure"].toDouble() > 0) {
+            tooltipText += "Pressure: " + formatPressure(main["pressure"].toDouble()) + "\n";
         }
     }
 
@@ -529,4 +533,5 @@ void LXQtWeatherWidget::updateTooltip(const QJsonObject &data)
     tooltipText += "\nMiddle click: open Yandex weather map";
 
     setToolTip(tooltipText);
+    qDebug().noquote() << "Tooltip:" << QString(tooltipText).replace('\n', " | ");
 }
