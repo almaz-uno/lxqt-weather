@@ -144,7 +144,7 @@ QDialog* LXQtWeatherPlugin::configureDialog()
     showDescriptionCheckBox->setChecked(settings()->value("show_description", true).toBool());
     showDescriptionCheckBox->setStyleSheet(QString("font-size: %1px;").arg(controlFontSize));
 
-    QLabel *descLabel = new QLabel("Show Weather Description:");
+    QLabel *descLabel = new QLabel("Show Humidity and Pressure:");
     descLabel->setStyleSheet(QString("font-size: %1px;").arg(labelFontSize));
     generalLayout->addRow(descLabel, showDescriptionCheckBox);
 

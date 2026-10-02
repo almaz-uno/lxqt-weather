@@ -51,7 +51,7 @@ private slots:
 private:
     void setupUI();
     void setupServices();
-    void updateDisplay(const QString &description = QString(), const QString &iconCode = QString());
+    void updateDisplay(const QString &details = QString(), const QString &iconCode = QString());
     void updateTooltip(const QJsonObject &data);
     void openYandexWeatherMap();
 

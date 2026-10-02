@@ -187,7 +187,7 @@ private:
         QLabel *unitLabel = new QLabel("Temperature Unit:");
         unitLabel->setStyleSheet(QString("font-size: %1px;").arg(labelFontSize));
 
-        QLabel *descLabel = new QLabel("Show Description:");
+        QLabel *descLabel = new QLabel("Show Humidity and Pressure:");
         descLabel->setStyleSheet(QString("font-size: %1px;").arg(labelFontSize));
 
         mIntervalSpinBox = new QSpinBox();

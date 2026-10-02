@@ -32,6 +32,7 @@ add_custom_target(version
 # LXQt panel plugin library
 add_library(weather SHARED
     src/weatherapi.cpp
+    src/weatherformat.cpp
     src/geolocation.cpp
     src/geocoder.cpp
     src/locationsetting.cpp
@@ -69,6 +70,7 @@ add_dependencies(weather version)
 add_executable(weather-test
     src/main.cpp
     src/weatherapi.cpp
+    src/weatherformat.cpp
     src/geolocation.cpp
     src/geocoder.cpp
     src/locationsetting.cpp
@@ -110,6 +112,16 @@ target_compile_definitions(geocoder_test PRIVATE
     FIXTURES_DIR="${CMAKE_SOURCE_DIR}/tests")
 add_dependencies(geocoder_test version)
 add_test(NAME geocoder COMMAND geocoder_test)
+
+# The Open-Meteo request and response, humidity and pressure, on a recorded
+# response (specs/005-humidity-pressure)
+add_executable(weather_test tests/weather_test.cpp src/weatherapi.cpp src/weatherformat.cpp)
+target_link_libraries(weather_test PRIVATE Qt5::Core Qt5::Network Qt5::Test)
+target_include_directories(weather_test PRIVATE src ${VERSION_DIR})
+target_compile_definitions(weather_test PRIVATE
+    FIXTURES_DIR="${CMAKE_SOURCE_DIR}/tests")
+add_dependencies(weather_test version)
+add_test(NAME weather COMMAND weather_test)
 
 # Installation
 install(TARGETS weather LIBRARY DESTINATION /usr/lib/x86_64-linux-gnu/lxqt-panel)

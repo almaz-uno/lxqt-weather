@@ -4,10 +4,74 @@
 #include <QUrl>
 #include <QUrlQuery>
 #include <QJsonParseError>
+#include <QDateTime>
 #include <QDebug>
 
 // Open-Meteo API - free and no keys required!
-const QString WeatherAPI::API_BASE_URL = "http://api.open-meteo.com/v1/forecast";
+static const char OPEN_METEO_URL[] = "http://api.open-meteo.com/v1/forecast";
+
+static QString weatherIconCode(int weatherCode);
+static QString weatherDescription(int weatherCode);
+
+QUrl openMeteoUrl(double latitude, double longitude)
+{
+    QUrl url(QString::fromLatin1(OPEN_METEO_URL));
+    QUrlQuery query;
+    query.addQueryItem("latitude", QString::number(latitude, 'f', 6));
+    query.addQueryItem("longitude", QString::number(longitude, 'f', 6));
+    query.addQueryItem("current", "temperature_2m,relative_humidity_2m,surface_pressure,"
+                                  "weather_code,wind_speed_10m,wind_direction_10m");
+    query.addQueryItem("wind_speed_unit", "ms");
+    query.addQueryItem("timezone", "auto");
+    url.setQuery(query);
+    return url;
+}
+
+bool parseOpenMeteo(const QByteArray &json, QJsonObject *weatherData, QString *error)
+{
+    QJsonParseError parseError;
+    const QJsonDocument doc = QJsonDocument::fromJson(json, &parseError);
+    if (parseError.error != QJsonParseError::NoError) {
+        *error = QString("JSON parse error: %1").arg(parseError.errorString());
+        return false;
+    }
+
+    const QJsonObject root = doc.object();
+    if (!root.value("current").isObject()) {
+        *error = "Invalid response format from Open-Meteo API";
+        return false;
+    }
+    const QJsonObject current = root.value("current").toObject();
+
+    // Convert Open-Meteo format to our internal format
+    QJsonObject main;
+    main["temp"] = current.value("temperature_2m").toDouble();
+    main["humidity"] = current.value("relative_humidity_2m").toInt();
+    main["pressure"] = current.value("surface_pressure").toDouble(); // hPa
+
+    QJsonObject wind;
+    wind["speed"] = current.value("wind_speed_10m").toDouble(); // m/s: wind_speed_unit=ms
+    wind["deg"] = current.value("wind_direction_10m").toDouble();
+
+    // Weather description based on WMO code
+    const int weatherCode = current.value("weather_code").toInt();
+    QJsonObject weather;
+    weather["id"] = weatherCode;
+    weather["main"] = weatherDescription(weatherCode);
+    weather["description"] = weatherDescription(weatherCode);
+    weather["icon"] = weatherIconCode(weatherCode);
+
+    QJsonObject coord;
+    coord["lat"] = root.value("latitude").toDouble();
+    coord["lon"] = root.value("longitude").toDouble();
+
+    weatherData->insert("main", main);
+    weatherData->insert("weather", QJsonArray{weather});
+    weatherData->insert("wind", wind);
+    weatherData->insert("coord", coord);
+    weatherData->insert("dt", QDateTime::currentSecsSinceEpoch());
+    return true;
+}
 
 WeatherAPI::WeatherAPI(QObject *parent)
     : QObject(parent)
@@ -38,18 +102,7 @@ void WeatherAPI::requestWeatherByCoordinates(double latitude, double longitude)
         mRetryTimer->stop();
     }
 
-    QUrl url(API_BASE_URL);
-    QUrlQuery query;
-
-    // Open-Meteo parameters
-    query.addQueryItem("latitude", QString::number(latitude, 'f', 6));
-    query.addQueryItem("longitude", QString::number(longitude, 'f', 6));
-    query.addQueryItem("current_weather", "true");
-    query.addQueryItem("hourly", "temperature_2m,relative_humidity_2m,weather_code");
-    query.addQueryItem("daily", "weather_code,temperature_2m_max,temperature_2m_min");
-    query.addQueryItem("timezone", "auto");
-
-    url.setQuery(query);
+    const QUrl url = openMeteoUrl(latitude, longitude);
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader, "lxqt-weather/" LXQT_WEATHER_VERSION);
@@ -195,77 +248,25 @@ void WeatherAPI::processWeatherData(const QByteArray &data)
     }
     
     qDebug() << "Raw data received:" << processedData.left(200) << "..."; // Show first 200 chars
-    
-    QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(processedData, &parseError);
 
-    if (parseError.error != QJsonParseError::NoError) {
-        qWarning() << "JSON parse error at offset" << parseError.offset << ":" << parseError.errorString();
-        qWarning() << "Data around error:" << processedData.mid(qMax(0, parseError.offset - 20), 40);
-        emit errorOccurred(QString("JSON parse error: %1").arg(parseError.errorString()));
-        return;
-    }
-
-    QJsonObject root = doc.object();
-
-    // Check for current weather data
-    if (!root.contains("current_weather")) {
-        emit errorOccurred("Invalid response format from Open-Meteo API");
-        return;
-    }
-
-    QJsonObject currentWeather = root["current_weather"].toObject();
-
-    // Convert Open-Meteo format to our internal format
     QJsonObject weatherData;
-    QJsonObject main;
-    QJsonArray weatherArray;
-    QJsonObject weather;
-    QJsonObject wind;
-
-    // Main weather data
-    main["temp"] = currentWeather["temperature"].toDouble();
-    main["humidity"] = 0; // Open-Meteo doesn't return humidity in current_weather
-    main["pressure"] = 0; // Also no pressure in current_weather
-
-    // Wind
-    wind["speed"] = currentWeather["windspeed"].toDouble();
-    wind["deg"] = currentWeather["winddirection"].toDouble();
-
-    // Weather description based on WMO code
-    int weatherCode = currentWeather["weathercode"].toInt();
-    weather["id"] = weatherCode;
-    weather["main"] = getWeatherDescription(weatherCode);
-    weather["description"] = getWeatherDescription(weatherCode);
-    weather["icon"] = getWeatherIconFromCode(weatherCode);
-
-    weatherArray.append(weather);
-
-    // Build final object
-    weatherData["main"] = main;
-    weatherData["weather"] = weatherArray;
-    weatherData["wind"] = wind;
-    weatherData["dt"] = QDateTime::currentSecsSinceEpoch();
+    QString error;
+    if (!parseOpenMeteo(processedData, &weatherData, &error)) {
+        qWarning() << "Open-Meteo response:" << error;
+        emit errorOccurred(error);
+        return;
+    }
 
     // Use real city name if available
-    if (!mCityName.isEmpty()) {
-        weatherData["name"] = mCityName;
-    } else {
-        weatherData["name"] = "Current Location";
-    }
-
-    // Add coordinates
-    QJsonObject coord;
-    coord["lat"] = root["latitude"].toDouble();
-    coord["lon"] = root["longitude"].toDouble();
-    weatherData["coord"] = coord;
+    weatherData["name"] = mCityName.isEmpty() ? QStringLiteral("Current Location") : mCityName;
 
     qDebug() << "Weather data processed successfully";
-    qDebug() << "Emitting weatherDataReceived signal with temperature:" << main["temp"].toDouble();
+    qDebug() << "Emitting weatherDataReceived signal with temperature:"
+             << weatherData["main"].toObject()["temp"].toDouble();
     emit weatherDataReceived(weatherData);
 }
 
-QString WeatherAPI::getWeatherIconFromCode(int weatherCode) const
+static QString weatherIconCode(int weatherCode)
 {
     // Mapping WMO weather codes to icons
     switch (weatherCode) {
@@ -301,7 +302,7 @@ QString WeatherAPI::getWeatherIconFromCode(int weatherCode) const
     }
 }
 
-QString WeatherAPI::getWeatherDescription(int weatherCode) const
+static QString weatherDescription(int weatherCode)
 {
     // Descriptions based on WMO codes
     switch (weatherCode) {

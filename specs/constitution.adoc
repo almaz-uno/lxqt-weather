@@ -141,8 +141,10 @@ Documentation describing behavior:
 ** `update_interval` — minutes between refreshes of location and weather,
    5 to 120 in the dialog, default 30;
 ** `temperature_unit` — `celsius` or `fahrenheit`, default `celsius`;
-** `show_description` — whether the weather description is shown under the
-   temperature, default `true`;
+** `show_description` — whether the line of humidity and pressure is shown
+   under the temperature, default `true`; until 0.3.0 it switched the line of
+   the weather description, which the line of humidity and pressure replaced
+   (specification `005-humidity-pressure`);
 ** `location` — the text of the "Location" field as entered: an address or
    coordinates; absent — the location is found by IP;
 ** `location_latitude`, `location_longitude`, `location_name` — the place the
@@ -181,8 +183,9 @@ talks to, and what it sends, is behavior the user can see:
   OK of the settings dialog and never as the text is typed, as its usage
   policy requires; the data are attributed to OpenStreetMap in the dialog and
   in `README.md`;
-* weather — `http://api.open-meteo.com/v1/forecast`, the `current_weather`
-  block, by coordinates;
+* weather — `http://api.open-meteo.com/v1/forecast`, the block `current`
+  (temperature, relative humidity, surface pressure, weather code, wind in
+  m/s), by coordinates (specification `005-humidity-pressure`);
 * the weather map — `https://yandex.ru/pogoda/maps/nowcast?lat=…&lon=…`,
   opened in the default browser on a middle click.
 
@@ -308,10 +311,8 @@ Open questions, recorded as open. Each is closed by a separate change with a
 specification, after which the corresponding section appears above.
 
 * *`README.md` diverges from the code* — it describes `src/resources.qrc` and
-  SVG icons in `data/icons/`, neither of which exists; it promises humidity and
-  pressure in the tooltip, which never appear (the `current_weather` block of
-  Open-Meteo has neither, and `WeatherAPI` sets them to zero); it does not
-  mention the middle click. Fixed by a documentation change.
+  SVG icons in `data/icons/`, neither of which exists; it does not mention
+  the middle click. Fixed by a documentation change.
 * *Non-English comments* — two comments in `LXQtWeatherWidget::sizeHint` are in
   Russian, contrary to section "Language".
 * *Location data* — without a location set, the widget sends the user's
