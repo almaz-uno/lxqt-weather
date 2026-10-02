@@ -3,7 +3,7 @@
 :toc-title: Contents
 :sectnums:
 :revdate: 2026-10-02
-:status: draft
+:status: implemented
 :issue: 14
 
 == What and why
@@ -105,6 +105,40 @@ untouched. Version 0.3.0: new behavior.
 | Release 0.3.0 installed on ws1, ws2 and ws3: the panel shows the humidity
   and the pressure under the temperature; the tooltip, the description and
   the wind — checked by the author.
+|===
+
+== Results
+
+2026-10-02, ws1 (Debian 12) and a local `debian:bookworm` container.
+
+[cols="1,6"]
+|===
+| # | How it is met
+
+| K1 | `weather_test` under `ctest`, 11 checks passed: the recorded response
+  of R1 — 11.7 °C, 61 %, 1007.3 hPa, code 3 "Overcast" with the icon code
+  `04d`, the wind 2.69 m/s from 312°; a response without `current` and a
+  truncated one — their errors; 1013.25 hPa — 760.00 mmHg, 1007.3 — "756
+  mmHg", none — empty; the line in four rows — `61% · 756 mmHg`, `61%`,
+  `756 mmHg`, empty; the request URL — host, path, coordinates, the six
+  variables of `current`, `wind_speed_unit=ms`, and none of
+  `current_weather`, `hourly`, `daily`.
+| K2 | `weather-test --location "55.6928, 37.3475"` under `strace`,
+  `QT_QPA_PLATFORM=offscreen`, 16:03 MSK: `GET /v1/forecast?…&current=
+  temperature_2m,relative_humidity_2m,surface_pressure,weather_code,
+  wind_speed_10m,wind_direction_10m&wind_speed_unit=ms&timezone=auto`; the
+  line under the temperature — "62% · 755 mmHg"; the tooltip — "Humidity:
+  62%", "Pressure: 755 mmHg", "Wind: 2.6 m/s", "Conditions: Overcast". The
+  same request with `curl` at 16:04, within the same 15-minute interval of
+  Open-Meteo: 62 %, 1007.2 hPa (755.46 mmHg), 2.62 m/s, 11.6 °C.
+| K3 | Research R3: 5847 bytes for the request of 0.2.0, 580 for the new one
+  — ten times smaller.
+| K4 | ws1 and the container: the only warnings are the ten
+  `QNetworkConfigurationManager` deprecations; `scripts/check-specs.sh`
+  passes; `ctest` — three tests. Workflow `test` on GitHub: the push of the
+  branch (run 37010968053) and pull request #15 (run 37010974245), about a
+  minute each.
+| K5 | After the release 0.3.0.
 |===
 
 == Open questions
