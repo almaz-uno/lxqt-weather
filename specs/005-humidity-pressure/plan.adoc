@@ -1,0 +1,50 @@
+= 005 — plan
+:toc: left
+:toc-title: Contents
+:revdate: 2026-10-02
+
+== Files
+
+[cols="2,5"]
+|===
+| File | What changes
+
+| `src/weatherapi.{h,cpp}`
+| The request — free function `openMeteoUrl(latitude, longitude)`; the
+  response — free function `parseOpenMeteo(json, data, error)` filling the
+  internal object the widget already reads (`main.temp`, `main.humidity`,
+  `main.pressure`, `wind.speed`, `wind.deg`, `weather`), from the block
+  `current`. Both free, so that the test needs no network.
+
+| `src/weatherformat.{h,cpp}`
+| New, no widget. `hpaToMmHg`, `formatPressure`, `formatDetails` — the line
+  `61% · 756 mmHg`.
+
+| `src/lxqtweatherwidget.cpp`
+| The line under the temperature from `formatDetails`; the tooltip's
+  humidity and pressure in mmHg, the wind in m/s.
+
+| `src/lxqtweatherplugin.cpp`, `src/main.cpp`
+| The label "Show Humidity and Pressure".
+
+| `CMakeLists.txt`
+| `src/weatherformat.cpp` in `weather`, `weather-test`; target
+  `weather_test`.
+
+| `tests/weather_test.cpp`, `tests/open-meteo-current.json`
+| New. K1.
+
+| `README.md`, `RELEASE-NOTES.adoc`, `specs/constitution.adoc`
+| The panel line and the settings, 0.3.0, the sections listed in the
+  specification.
+|===
+
+== Order
+
+. This specification — the first commit of the branch, the pull request a
+  draft.
+. The parsing, the format and the test (K1).
+. The widget and the dialogs; K2–K4 on ws1, in a `debian:bookworm`
+  container and on GitHub.
+. The results, `:status: implemented`, the pull request ready.
+. Release 0.3.0 by the author's word; K5.

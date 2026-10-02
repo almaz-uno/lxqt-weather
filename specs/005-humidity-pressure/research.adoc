@@ -1,0 +1,45 @@
+= 005 — research
+:toc: left
+:toc-title: Contents
+:revdate: 2026-10-02
+
+== R1 — the block `current` of Open-Meteo
+
+2026-10-02, 15:45 MSK, `https://api.open-meteo.com/v1/forecast`, the
+location of Skolkovo (55.692788, 37.347460):
+
+[cols="2,2,2"]
+|===
+| Variable | Value | Unit
+
+| `temperature_2m` | 11.7 | °C
+| `relative_humidity_2m` | 61 | %
+| `surface_pressure` | 1007.3 | hPa
+| `pressure_msl` (14:45) | 1031.2 | hPa
+| `weather_code` | 3 | WMO code
+| `wind_speed_10m` with `wind_speed_unit=ms` | 2.69 | m/s
+| `wind_direction_10m` | 312 | °
+|===
+
+Open-Meteo puts the place at 188 m above the sea; the surface and the
+sea-level pressure differ there by about 23 hPa (1008.3 against 1031.2 at
+14:45). The response to the request of the specification is recorded in
+`tests/open-meteo-current.json`.
+
+== R2 — the wind of `current_weather`
+
+The same place, 14:45: `current_weather` gives `windspeed` 10.7 with the unit
+`km/h` (`current_weather_units`), while `current` with `wind_speed_unit=ms`
+gives 2.97 m/s; 10.7 / 3.6 = 2.97. The tooltip prints the number of
+`current_weather` with "m/s" — 3.6 times the real speed.
+
+== R3 — the size of the response
+
+The same place, 2026-10-02: the request of 0.2.0 — `current_weather`,
+`hourly` with three variables, `daily` with three — 5847 bytes; the request of
+the specification — `current` with six variables — 580 bytes.
+
+== R4 — millimetres of mercury
+
+1 mmHg = 133.322387415 Pa, so 1 hPa = 0.750061576 mmHg: 1007.3 hPa = 755.54,
+rounded to 756; the standard atmosphere, 1013.25 hPa, is 760.00 mmHg.
