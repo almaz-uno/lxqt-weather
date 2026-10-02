@@ -138,7 +138,19 @@ untouched. Version 0.3.0: new behavior.
   passes; `ctest` — three tests. Workflow `test` on GitHub: the push of the
   branch (run 37010968053) and pull request #15 (run 37010974245), about a
   minute each.
-| K5 | After the release 0.3.0.
+| K5 | Release `v0.3.0`, tag on `258c16e` (the merge of pull request #15),
+  run 37013164261: `test / test` 13:28:00–13:29:13 UTC, `release`
+  13:29:15–13:30:33 — after it; `lxqt-weather_0.3.0_amd64.deb` (141 910
+  bytes) passes `sha256sum -c`, `Version: 0.3.0`, `weather-test --version`
+  — `lxqt-weather v0.3.0`; the text is the chapter 0.3.0. Installed on the
+  author's instruction on ws1, ws2 and ws3 with `apt`, over 0.2.0; the
+  panel configurations untouched — the location of specification 002 kept.
+  After the restart each machine runs one `lxqt-panel`, mapping the
+  installed `libweather.so` (the same inode), and at 16:31 MSK each logged
+  the line `63% · 755 mmHg` and the tooltip lines "Location: Технопарк",
+  "Temperature: 12°C", "Humidity: 63%", "Pressure: 755 mmHg", "Wind: 2.4
+  m/s", "Conditions: Overcast". The author checked the panel and the
+  tooltip.
 |===
 
 == Open questions
