@@ -127,7 +127,9 @@ its own from the same branch.
 | K1 | `check-jsonschema` 0.38.2 with the schema fetched on 2026-10-01 exits
   0 at `198b3ad`; the file of qws with `interval: fortnightly` fails, so the
   check is not vacuous.
-| K2 | After the merge, by a pull request of its own.
+| K2 | Merged as `d421d4a` at 19:23:25 UTC. Run 36913936030 of
+  "Dependabot Updates" (`github_actions`), started 7 s later, passed and
+  opened no pull request: `@v7` is current.
 | K3 | After `gh api -X PUT` of both on 2026-10-01: `vulnerability-alerts`
   answers 204, `automated-security-fixes` answers
   `{"enabled":true,"paused":false}`.
@@ -145,3 +147,9 @@ its own from the same branch.
   more likely withdrawn before it is proposed. Not set, as in qws and
   siphon: a monthly check already proposes most versions weeks after their
   release, and a security update ignores it.
+* *The gitmoji of Dependabot's commits.* With prefix `⬆️ build` Dependabot
+  writes `:arrow_up: build(deps): Bump …` — seen in qws, its pull request
+  #38: a gitmoji still, in the form of its shortcode, which `git log` shows
+  as text, while the history uses the character. Accepted as is for now; the
+  alternative is prefix `build`, as in siphon, which gives
+  `build(deps): bump …` without a gitmoji.
